@@ -15,3 +15,10 @@ __pycache__/
 /results
 /files
 /test*
+
+wandb
+
+# c++/cython style external packages
+ez/mcts/ctree/cytree.cpp
+ez/mcts/ctree_v2/cytree.cpp
+ez/mcts/ori_ctree/cytree.cpp
