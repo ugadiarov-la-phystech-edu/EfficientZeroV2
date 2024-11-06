@@ -8,6 +8,7 @@ from .wrapper import *
 import random
 from dm_env import specs
 from ez.utils.format import arr_to_str
+from ez.envs.shapes2d import shapes2d
 
 
 def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):

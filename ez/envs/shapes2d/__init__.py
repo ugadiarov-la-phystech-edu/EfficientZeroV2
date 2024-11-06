@@ -2,7 +2,7 @@ from gymnasium.envs.registration import register
 
 register(
     'Navigation5x5-v0',
-    entry_point='envs.shapes2d:Shapes2d',
+    entry_point='ez.envs.shapes2d.shapes2d:Shapes2d',
     max_episode_steps=100,
     kwargs={
         'observation_type': 'shapes',
@@ -23,7 +23,7 @@ register(
 
 register(
     'Navigation5x5Interaction-v0',
-    entry_point='envs.shapes2d:Shapes2d',
+    entry_point='ez.envs.shapes2d.shapes2d:Shapes2d',
     max_episode_steps=100,
     kwargs={
         'observation_type': 'shapes',
@@ -44,7 +44,7 @@ register(
 
 register(
     'RandomWalk-v0',
-    entry_point='envs.shapes2d:Shapes2d',
+    entry_point='ez.envs.shapes2d.shapes2d:Shapes2d',
     max_episode_steps=100,
     kwargs={
         'observation_type': 'shapes',
@@ -64,7 +64,7 @@ register(
 
 register(
     'Navigation10x10-v0',
-    entry_point='envs.shapes2d:Shapes2d',
+    entry_point='ez.envs.shapes2d.shapes2d:Shapes2d',
     max_episode_steps=100,
     kwargs={
         'observation_type': 'shapes',
@@ -85,7 +85,7 @@ register(
 
 register(
     'Pushing7x7-v0',
-    entry_point='envs.shapes2d:Shapes2d',
+    entry_point='ez.envs.shapes2d.shapes2d:Shapes2d',
     max_episode_steps=100,
     kwargs={
         'observation_type': 'shapes',
@@ -105,7 +105,7 @@ register(
 
 register(
     'PushingNoAgent5x5-v0',
-    entry_point='envs.shapes2d:Shapes2d',
+    entry_point='ez.envs.shapes2d.shapes2d:Shapes2d',
     max_episode_steps=100,
     kwargs={
         'observation_type': 'shapes',
@@ -125,7 +125,7 @@ register(
 
 register(
     'Navigation4x4B3G1Circle-v0',
-    entry_point='envs.shapes2d:Shapes2d',
+    entry_point='ez.envs.shapes2d.shapes2d:Shapes2d',
     max_episode_steps=100,
     kwargs={
         'observation_type': 'circle',
@@ -147,7 +147,7 @@ register(
 
 register(
     'PushingNoAgent4x4B3G1Circle-v0',
-    entry_point='envs.shapes2d:Shapes2d',
+    entry_point='ez.envs.shapes2d.shapes2d:Shapes2d',
     max_episode_steps=100,
     kwargs={
         'observation_type': 'circle',

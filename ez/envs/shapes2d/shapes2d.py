@@ -2,7 +2,8 @@ import random
 
 import gymnasium as gym
 import numpy as np
-import skimage
+from skimage.draw import ellipse
+from skimage.draw import polygon
 from gymnasium.utils import seeding
 from gymnasium import spaces
 import copy
@@ -26,22 +27,22 @@ def get_colors(cmap='Set1', num_colors=9):
 
 def diamond(r0, c0, width, im_size):
     rr, cc = [r0, r0 + width / 2, r0 + width, r0 + width / 2], [c0 + width / 2, c0, c0 + width / 2, c0 + width]
-    return skimage.draw.polygon(rr, cc, im_size)
+    return polygon(rr, cc, im_size)
 
 
 def square(r0, c0, width, im_size):
     rr, cc = [r0, r0 + width - 0.5, r0 + width - 0.5, r0], [c0, c0, c0 + width - 0.5, c0 + width - 0.5]
-    return skimage.draw.polygon(rr, cc, im_size)
+    return polygon(rr, cc, im_size)
 
 
 def triangle(r0, c0, width, im_size):
     rr, cc = [r0 - 1.5, r0 + width - 1, r0 + width - 1], [c0 + width / 2 - 0.5, c0, c0 + width - 1]
-    return skimage.draw.polygon(rr, cc, im_size)
+    return polygon(rr, cc, im_size)
 
 
 def circle(r0, c0, width, im_size):
     radius = width / 2
-    return skimage.draw.ellipse(r0 + radius - 0.5, c0 + radius - 0.5, radius, radius, im_size)
+    return ellipse(r0 + radius - 0.5, c0 + radius - 0.5, radius, radius, im_size)
 
 
 def cross(r0, c0, width, im_size):
@@ -51,7 +52,7 @@ def cross(r0, c0, width, im_size):
           r0 + diff2, r0 + diff2, r0 + diff1, r0 + diff1, r0, r0, r0 + diff1]
     cc = [c0, c0, c0 + diff1, c0 + diff1, c0 + diff2, c0 + diff2, c0 + width - 0.5,
           c0 + width - 0.5, c0 + diff2, c0 + diff2, c0 + diff1, c0 + diff1]
-    return skimage.draw.polygon(rr, cc, im_size)
+    return polygon(rr, cc, im_size)
 
 
 def pentagon(r0, c0, width, im_size):
@@ -59,18 +60,18 @@ def pentagon(r0, c0, width, im_size):
     diff2 = 2 * width / 3 + 1
     rr = [r0 + width / 2, r0 + width, r0 + width, r0 + width / 2, r0]
     cc = [c0, c0 + diff1, c0 + diff2, c0 + width, c0 + width / 2]
-    return skimage.draw.polygon(rr, cc, im_size)
+    return polygon(rr, cc, im_size)
 
 
 def parallelogram(r0, c0, width, im_size):
     rr, cc = [r0, r0 + width - 0.5, r0 + width - 0.5, r0], [c0, c0 + width / 2, c0 + width - 0.5,
                                                             c0 + width - width / 2 - 0.5]
-    return skimage.draw.polygon(rr, cc, im_size)
+    return polygon(rr, cc, im_size)
 
 
 def scalene_triangle(r0, c0, width, im_size):
     rr, cc = [r0, r0 + width, r0 + width / 2], [c0 + width - width / 2, c0, c0 + width]
-    return skimage.draw.polygon(rr, cc, im_size)
+    return polygon(rr, cc, im_size)
 
 
 class Shapes2d(gym.Env):
