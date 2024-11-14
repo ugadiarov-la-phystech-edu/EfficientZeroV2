@@ -6,6 +6,9 @@
 import os
 import time
 os.environ["RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["HYDRA_FULL_ERROR"] = "1"
 import ray
 import wandb
 import hydra
@@ -55,7 +58,7 @@ def start_ddp_trainer(rank, config):
     num_gpus = torch.cuda.device_count()
     num_cpus = multiprocessing.cpu_count()
     #ray.init(num_gpus=num_gpus, num_cpus=num_cpus, object_store_memory=150 * 1024 * 1024 * 1024 if config.env.image_based else 100 * 1024 * 1024 * 1024)
-    ray.init(num_gpus=num_gpus, num_cpus=num_cpus, object_store_memory=5 * 1024 * 1024 * 1024 if config.env.image_based else 5 * 1024 * 1024 * 1024)
+    ray.init(num_gpus=num_gpus, num_cpus=num_cpus, object_store_memory=20 * 1024 * 1024 * 1024 if config.env.image_based else 5 * 1024 * 1024 * 1024)
     set_seed(config.env.base_seed + rank >= 0)              # set seed
     # set log
 

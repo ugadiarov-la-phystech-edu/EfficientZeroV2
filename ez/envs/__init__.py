@@ -9,6 +9,7 @@ import random
 from dm_env import specs
 from ez.utils.format import arr_to_str
 from ez.envs.shapes2d import shapes2d
+import gymnasium as newgym
 
 
 def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
@@ -116,7 +117,7 @@ def make_gym(game_name, seed, save_path=None, **kwargs):
     obs_to_string = kwargs.get('obs_to_string')
     skip = kwargs['n_skip'] if kwargs.get('n_skip') else 4
 
-    env = gym.make(game_name)
+    env = newgym.make(game_name)
     env = GymWrapper(env, obs_to_string=obs_to_string)
 
     # frame skip
