@@ -6,13 +6,13 @@ env:
   env: Gym
   game: Navigation5x5-v0
   base_seed: 0
-  n_skip: 4
+  n_skip: 0
   n_stack: 4
-  max_episode_steps: 3000 # 27000 for final test
+  max_episode_steps: 100
   gray_scale: False
   image_based: True
   clip_reward: True
-  obs_shape: [3, 96, 96]
+  obs_shape: [3, 50, 50]
   episodic: True
 
 rl:
@@ -143,12 +143,12 @@ model:
     scale: 1
     env: Gym
     bins: 51
-    type: support   # support or symlog
+    type: support  # support or symlog
 
 # worker process allocation
 actors:
   data_worker: 1
-  batch_worker: 8  # oriMCTS 16
+  batch_worker: 1  # oriMCTS 16
 
 # wandb
 wandb:

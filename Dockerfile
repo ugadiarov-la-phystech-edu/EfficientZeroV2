@@ -20,17 +20,6 @@ RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
 WORKDIR /app
 
-#RUN git clone -b shapes2d_learn --single-branch https://github.com/ugadiarov-la-phystech-edu/EfficientZeroV2.git .
+COPY requirements.txt /app/requirements.txt
 
 RUN python -m pip install --no-cache-dir -r requirements.txt
-
-WORKDIR /app/ez/mcts/ctree
-RUN bash make.sh
-
-WORKDIR /app/ez/mcts/ctree_v2
-RUN bash make.sh
-
-WORKDIR /app/ez/mcts/ori_ctree
-RUN bash make.sh
-
-WORKDIR /app

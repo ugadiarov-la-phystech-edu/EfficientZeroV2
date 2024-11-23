@@ -1,6 +1,6 @@
 import os
 import dmc2gym
-from gym.wrappers import Monitor
+#from gym.wrappers import Monitor
 from .gym import GymWrapper
 from .atari import AtariWrapper
 from .dmc import DMCWrapper
@@ -9,17 +9,18 @@ import random
 from dm_env import specs
 from ez.utils.format import arr_to_str
 from ez.envs.shapes2d import shapes2d
-import gymnasium as newgym
 
 
 def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
-    assert game_setting in ['Atari', 'DMC', 'Gym']
+    assert game_setting in ['Atari', 'DMC', 'Gym', 'Shapes2d']
     if game_setting == 'Atari':
         _env_fn = make_atari
     elif game_setting == 'Gym':
         _env_fn = make_gym
     elif game_setting == 'DMC':
-        _env_fn = make_dmc
+        _env_fn = make_dmc  
+    elif game_setting == 'Shapes2d':
+        _env_fn = make_shapes2d
     else:
         raise NotImplementedError()
 
@@ -34,13 +35,15 @@ def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs)
 
 
 def make_env(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
-    assert game_setting in ['Atari', 'DMC', 'Gym']
+    assert game_setting in ['Atari', 'DMC', 'Gym', 'Shapes2d']
     if game_setting == 'Atari':
         _env_fn = make_atari
     elif game_setting == 'Gym':
         _env_fn = make_gym
     elif game_setting == 'DMC':
         _env_fn = make_dmc
+    elif game_setting == 'Shapes2d':
+        _env_fn = make_shapes2d
     else:
         raise NotImplementedError()
 
@@ -116,19 +119,24 @@ def make_gym(game_name, seed, save_path=None, **kwargs):
     save_path = kwargs.get('save_path')
     obs_to_string = kwargs.get('obs_to_string')
     skip = kwargs['n_skip'] if kwargs.get('n_skip') else 4
+    gray_scale = kwargs.get('gray_scale')
+    obs_shape = kwargs['obs_shape']
+    max_episode_steps = kwargs['max_episode_steps']
 
-    env = newgym.make(game_name)
-    env = GymWrapper(env, obs_to_string=obs_to_string)
+    env = gym.make(game_name)
+    #env = GymWrapper(env, obs_to_string=obs_to_string)
 
-    # frame skip
-    env = MaxAndSkipEnv(env, skip=skip)
+    #frame skip
+    #env = MaxAndSkipEnv(env, skip=skip)
 
     # set seed
     env.seed(seed)
-
-    # save video to given
-    if save_path:
-        env = Monitor(env, directory=save_path, force=True)
+    
+    #save video to given
+    #if save_path:
+        #env = Monitor(env, directory=save_path, force=True)
+    env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
+    env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
     env = GymWrapper(env, obs_to_string=obs_to_string)
     return env
@@ -182,4 +190,21 @@ def make_dmc(game_name, seed, save_path=None, **kwargs):
 
     # your wrapper
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
+    return env
+
+def make_shapes2d(game_name, seed, save_path=None, **kwargs):
+
+    gray_scale = kwargs.get('gray_scale')
+    obs_shape = kwargs['obs_shape']
+    max_episode_steps = kwargs['max_episode_steps']
+
+    env = gym.make(game_name)
+
+    env.seed(seed)
+
+    env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
+
+    env = TimeLimit(env, max_episode_steps=max_episode_steps)
+    
+    env = GymWrapper(env)
     return env

@@ -1,11 +1,10 @@
 import random
-
-import gymnasium as gym
+import gym
 import numpy as np
 from skimage.draw import ellipse
 from skimage.draw import polygon
-from gymnasium.utils import seeding
-from gymnasium import spaces
+from gym.utils import seeding
+from gym import spaces
 import copy
 
 import matplotlib as mpl

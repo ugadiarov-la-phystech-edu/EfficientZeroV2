@@ -113,13 +113,13 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
         # tree search for policies
         tree = mcts.names[config.mcts.language](
             # num_actions=config.env.action_space_size if config.env.env == 'Atari' else config.mcts.num_top_actions,
-            num_actions=config.env.action_space_size if config.env.env == 'Atari' else config.mcts.num_sampled_actions,
+            num_actions=config.env.action_space_size if (config.env.env == 'Atari' or config.env.env == 'Shapes2d')  else config.mcts.num_sampled_actions,
             discount=config.rl.discount,
             env=config.env.env,
             **config.mcts,  # pass mcts related params
             **config.model,  # pass the value and reward support params
         )
-        if config.env.env == 'Atari':
+        if config.env.env == 'Atari' or config.env.env == 'Shapes2d':
             if config.mcts.use_gumbel:
                 r_values, r_policies, best_actions, _ = tree.search(model, n_episodes, states, values, policies,
                                                                     use_gumble_noise=False, verbose=verbose)
@@ -147,7 +147,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             # save data to trajectory buffer
             game_trajs[i].store_search_results(values[i], r_values[i], r_policies[i])
             game_trajs[i].append(action, obs, reward)
-            if config.env.env == 'Atari':
+            if config.env.env == 'Atari' or config.env.env == 'Shapes2d':
                 game_trajs[i].snapshot_lst.append(envs[i].ale.cloneState())
             else:
                 game_trajs[i].snapshot_lst.append(envs[i].physics.get_state())
