@@ -1,8 +1,8 @@
 torch==2.0.1
 numpy==1.20.0
-gym==0.22.0
-gym[atari]==0.22.0
-gym[accept-rom-license]==0.22.0
+gym==0.26.1
+gym[atari]==0.26.1
+gym[accept-rom-license]==0.26.1
 cython
 PyOpenGL-accelerate
 hydra-core
