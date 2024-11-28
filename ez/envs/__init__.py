@@ -102,6 +102,7 @@ def make_atari(game_name, seed, save_path=None, **kwargs):
 
     # reshape size and gray scale
     env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
+    
     # set max limit
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
@@ -123,17 +124,17 @@ def make_gym(game_name, seed, save_path=None, **kwargs):
     max_episode_steps = kwargs['max_episode_steps']
 
     env = gym.make(game_name)
-    #env = GymWrapper(env, obs_to_string=obs_to_string)
+    env = GymWrapper(env, obs_to_string=obs_to_string)
 
     #frame skip
-    #env = MaxAndSkipEnv(env, skip=skip)
+    env = MaxAndSkipEnv(env, skip=skip)
 
     # set seed
     env.seed(seed)
     
     #save video to given
-    #if save_path:
-        #env = Monitor(env, directory=save_path, force=True)
+    if save_path:
+        env = Monitor(env, directory=save_path, force=True)
     env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
