@@ -102,7 +102,6 @@ def make_atari(game_name, seed, save_path=None, **kwargs):
 
     # reshape size and gray scale
     env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
-
     # set max limit
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
@@ -204,7 +203,7 @@ def make_shapes2d(game_name, seed, save_path=None, **kwargs):
 
     env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
 
-    env = TimeLimit(env, max_episode_steps=max_episode_steps)
-    
     env = GymWrapper(env)
+
+    env = TimeLimit(env, max_episode_steps=max_episode_steps)
     return env

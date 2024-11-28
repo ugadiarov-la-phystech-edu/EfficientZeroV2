@@ -10,7 +10,7 @@ import math
 from ez.agents.base import Agent
 from omegaconf import open_dict
 
-from ez.envs import make_gym
+from ez.envs import make_shapes2d
 from ez.utils.format import DiscreteSupport
 from ez.agents.models import EfficientZero
 from ez.agents.models.base_model import *
@@ -37,7 +37,7 @@ class EZShapes2dAgent(Agent):
     def update_config(self):
         assert not self._update
 
-        env = make_gym(self.config.env.game, seed=0, save_path=None, **self.config.env)
+        env = make_shapes2d(self.config.env.game, seed=0, save_path=None, **self.config.env)
         action_space_size = env.action_space.n
 
         obs_channel = 1 if self.config.env.gray_scale else 3

@@ -3,7 +3,7 @@ agent_name: shapes2d_agent
 
 # env setting
 env:
-  env: Gym
+  env: Shapes2d
   game: Navigation5x5-v0
   base_seed: 0
   n_skip: 0
@@ -12,7 +12,7 @@ env:
   gray_scale: False
   image_based: True
   clip_reward: True
-  obs_shape: [3, 50, 50]
+  obs_shape: [3, 96, 96]
   episodic: True
 
 rl:
@@ -135,13 +135,13 @@ model:
   reward_support:
     range: [-300, 300]
     scale: 1
-    env: Gym
+    env: Shapes2d
     bins: 51
     type: support   # support or symlog
   value_support:
     range: [-300, 300]
     scale: 1
-    env: Gym
+    env: Shapes2d
     bins: 51
     type: support  # support or symlog
 
