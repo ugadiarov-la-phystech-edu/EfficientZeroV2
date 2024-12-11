@@ -8,6 +8,10 @@ import math
 import torch.nn as nn
 import numpy as np
 from .layer import ResidualBlock, conv3x3, mlp
+from omegaconf import OmegaConf
+from collections import namedtuple
+from ez.ocr.slate.slate import SLATE
+from ez.ocr.tools import obs_to_tensor
 
 
 # Down_sample observations before representation network (See paper appendix Network Architecture)
@@ -99,6 +103,28 @@ class RepresentationNetwork(nn.Module):
             x = block(x)
         return x
 
+#TODO доделать и проверить
+class OCRepresentationNetwork(nn.Module):
+    def __init__(self, ocr_config_path, obs_size, checkpoint_path, device):
+        super().__init__()
+        self.ocr_config_path = ocr_config_path
+        self.obs_size = obs_size
+        self.config_ocr = OmegaConf.load(self.ocr_config_path)
+        config_env = namedtuple('EnvConfig', ['obs_size', 'obs_channels'])(self.obs_size, 3)
+        self.slate = SLATE(self.config_ocr, config_env, observation_space=None, preserve_slot_order=True)
+        self.device = device
+        self.slate.to(self.device)
+
+        self.checkpoint_path = checkpoint_path
+        state_dict = torch.load(self.checkpoint_path)["ocr_module_state_dict"]
+        self.slate._module.load_state_dict(state_dict)
+        self.slate.requires_grad_(False)
+        self.slate.eval()
+
+    def forward(self, x):
+        image_tensor = obs_to_tensor(x, device=self.device)
+        slots = self.slate._module._get_slots(image_tensor)
+        return slots
 
 # Predict next hidden states given current states and actions
 class DynamicsNetwork(nn.Module):
@@ -162,6 +188,11 @@ class DynamicsNetwork(nn.Module):
 
         return state
 
+class OCDynamicsNetwork(nn.Module):
+    def __init__(self, num_blocks, num_channels, action_space_size, is_continuous=False, action_embedding=False, action_embedding_dim=32):
+        super().__init__()
+    def forward(self, state, action):
+        return state
 
 class ValuePolicyNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, value_output_size,
@@ -211,6 +242,12 @@ class ValuePolicyNetwork(nn.Module):
             policy[:, action_space_size:] = (torch.nn.functional.softplus(policy[:, action_space_size:] + self.init_std) + self.min_std)#.clip(0, 5)  # same as Dreamer-v3
 
         return torch.stack(values), policy
+    
+class OCValuePolicyNetwork(nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self, x):
+        return x
 
 class SupportNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, output_support_size, init_zero):

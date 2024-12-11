@@ -43,7 +43,7 @@ def main(config):
     num_cpus = multiprocessing.cpu_count()
     #ray.init(num_gpus=num_gpus, num_cpus=num_cpus, object_store_memory=150 * 1024 * 1024 * 1024 if config.env.image_based else 100 * 1024 * 1024 * 1024)
     ray.init(num_gpus=num_gpus, num_cpus=num_cpus,
-             object_store_memory= 5 * 1024 * 1024 * 1024 if config.env.image_based else 5 * 1024 * 1024 * 1024)
+             object_store_memory= 1 * 1024 * 1024 * 1024 if config.env.image_based else 5 * 1024 * 1024 * 1024)
 
     # prepare model
     model = agent.build_model()
