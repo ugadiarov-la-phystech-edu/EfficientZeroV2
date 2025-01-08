@@ -44,6 +44,7 @@ ddp:
 
 ray:
   single_process: False
+  store_memory_gb: 100
 
 # log
 log:
