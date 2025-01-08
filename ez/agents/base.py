@@ -204,6 +204,10 @@ class Agent:
             if is_main_process and step_count % self.config.train.save_ckpt_interval == 0:
                 cur_model_path = model_path / 'model_{}.p'.format(step_count)
                 torch.save(self.get_weights(model), cur_model_path)
+                buffer_path = model_path / 'buffer'
+                buffer_path.mkdir(parents=True, exist_ok=True)
+                is_buffer_saved = ray.get(replay_buffer.save_buffer.remote(str(buffer_path.resolve())))
+                assert is_buffer_saved
 
             end_time = time.time()
             total_time += end_time - start_time

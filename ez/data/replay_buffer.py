@@ -193,36 +193,56 @@ class ReplayBuffer:
         assert len(self.priorities) == len(self.snapshots)
         return len(self.transition_idx_look_up)
 
-    def save_buffer(self):
-        path = '/workspace/EZ-Codebase/buffer/'
-        f_buffer = open(path + 'buffer.b', 'wb')
+    def save_buffer(self, path):
+        f_buffer = open(os.path.join(path, 'buffer.b'), 'wb')
         pickle.dump(self.buffer, f_buffer)
         f_buffer.close()
-        f_priorities = open(path + 'priorities.b', 'wb')
+        f_priorities = open(os.path.join(path, 'priorities.b'), 'wb')
         pickle.dump(self.priorities, f_priorities)
         f_priorities.close()
-        f_lookup = open(path + 'lookup.b', 'wb')
+        f_lookup = open(os.path.join(path, 'lookup.b'), 'wb')
         pickle.dump(self.transition_idx_look_up, f_lookup)
         f_lookup.close()
-        f_snapshot = open(path + 'snapshots.b', 'wb')
+        f_snapshot = open(os.path.join(path, 'snapshots.b'), 'wb')
         pickle.dump(self.snapshots, f_snapshot)
         f_snapshot.close()
+
+        attributes = {'batch_size': self.batch_size, 'buffer_size': self.buffer_size,
+                      'top_transitions': self.top_transitions, 'use_priority': self.use_priority, 'env': self.env,
+                      'total_transitions': self.total_transitions, 'base_idx': self.base_idx,
+                      'clear_time': self.clear_time}
+        f_attributes = open(os.path.join(path, 'attributes.b'), 'wb')
+        pickle.dump(attributes, f_attributes)
+        f_attributes.close()
+
         return True
 
-    def load_buffer(self):
-        path = '/workspace/EZ-Codebase/buffer/'
-        f = open(path + 'buffer.b', 'rb')
+    def load_buffer(self, path):
+        f = open(os.path.join(path, 'buffer.b'), 'rb')
         self.buffer = pickle.load(f)
         f.close()
-        f = open(path + 'priorities.b', 'rb')
+        f = open(os.path.join(path, 'priorities.b'), 'rb')
         self.priorities = pickle.load(f)
         f.close()
-        f = open(path + 'lookup.b', 'rb')
+        f = open(os.path.join(path, 'lookup.b'), 'rb')
         self.transition_idx_look_up = pickle.load(f)
         f.close()
-        f = open(path + 'snapshots.b', 'rb')
+        f = open(os.path.join(path, 'snapshots.b'), 'rb')
         self.snapshots = pickle.load(f)
         f.close()
+
+        f_attributes = open(os.path.join(path, 'attributes.b'), 'rb')
+        attributes = pickle.load(f_attributes)
+        f_attributes.close()
+
+        for attr_name in ('batch_size', 'buffer_size', 'top_transitions', 'use_priority', 'env', 'total_transitions'):
+            if getattr(self, attr_name) != attributes[attr_name]:
+                raise ValueError(
+                    f'ReplayBuffer loading error. Inconsistent value of {attr_name}. Current value: {getattr(self, attr_name)}. In checkpoint: {attributes[attr_name]}.')
+
+        self.base_idx = attributes['base_idx']
+        self.clear_time = attributes['clear_time']
+
         return True
 
 # ======================================================================================================================
