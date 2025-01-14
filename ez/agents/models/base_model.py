@@ -7,7 +7,7 @@ import torch
 import math
 import torch.nn as nn
 import numpy as np
-from .layer import ResidualBlock, conv3x3, mlp
+from .layer import ResidualBlock, GNN, conv3x3, mlp
 from omegaconf import OmegaConf
 from collections import namedtuple
 from ez.ocr.slate.slate import SLATE
@@ -103,7 +103,7 @@ class RepresentationNetwork(nn.Module):
             x = block(x)
         return x
 
-#TODO доделать и проверить
+#TODO доделать и проверить OC версии моделей
 class OCRepresentationNetwork(nn.Module):
     def __init__(self, ocr_config_path, obs_size, checkpoint_path, device):
         super().__init__()
@@ -189,10 +189,17 @@ class DynamicsNetwork(nn.Module):
         return state
 
 class OCDynamicsNetwork(nn.Module):
-    def __init__(self, num_blocks, num_channels, action_space_size, is_continuous=False, action_embedding=False, action_embedding_dim=32):
+    def __init__(self, slot_dim, latent_dim, action_space_size, n_slots):
         super().__init__()
-    def forward(self, state, action):
-        return state
+        self.slot_dim = slot_dim
+        self.latent_dim = latent_dim
+        self.action_space_size = action_space_size
+        self.n_slots = n_slots
+        self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim,
+                              action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
+                              copy_action=True, edge_actions=True)
+    def forward(self, slots, action):
+        return self.gnn(slots, action)
 
 class ValuePolicyNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, value_output_size,
@@ -242,12 +249,39 @@ class ValuePolicyNetwork(nn.Module):
             policy[:, action_space_size:] = (torch.nn.functional.softplus(policy[:, action_space_size:] + self.init_std) + self.min_std)#.clip(0, 5)  # same as Dreamer-v3
 
         return torch.stack(values), policy
-    
+#TODO check num_bins и в Support Network тоже   
 class OCValuePolicyNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, slot_dim, latent_dim, action_space_size, n_slots, is_continuous=False):
         super().__init__()
-    def forward(self, x):
-        return x
+        self.slot_dim = slot_dim
+        self.latent_dim = latent_dim
+        self.action_space_size = action_space_size
+        self.n_slots = n_slots
+        self.is_continuous = is_continuous
+        self.init_std = 1.0
+        self.min_std = 0.1
+        self.gnn_policy = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim,
+                              action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
+                              copy_action=True, edge_actions=True)
+        self.mlp_policy = nn.Linear(in_features=self.slot_dim, out_features=2 * self.action_space_size)
+        self.gnn_value = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim,
+                              action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
+                              copy_action=True, edge_actions=True)
+        #self.mlp_value = self.mlp = nn.Linear(in_features=self.slot_dim, out_features=max(self.cfg.num_bins, 1))
+        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=1)
+        self.act = nn.ReLU(inplace=True)
+
+    def forward(self, slots):
+
+        x = self.gnn_policy(slots, action=None)
+        x = self.act(x)
+        policy = self.mlp_policy(x.mean(dim=1))
+
+        x = self.gnn_values(slots, action=None)
+        x = self.act(x)
+        values = self.mlp_value(x.mean(dim=1))
+
+        return values, policy
 
 class SupportNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, output_support_size, init_zero):
@@ -266,8 +300,28 @@ class SupportNetwork(nn.Module):
         x = x.reshape(-1, self.flatten_size)
         x = self.fc(x)
         return x
+    
+class OCSupportNetwork(nn.Module):
+    def __init__(self, slot_dim, latent_dim, action_space_size, n_slots):
+        super().__init__()
+        self.slot_dim = slot_dim
+        self.latent_dim = latent_dim
+        self.action_space_size = action_space_size
+        self.n_slots = n_slots
+        self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim,
+                              action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
+                              copy_action=True, edge_actions=True)
+        self.act = nn.ReLU(inplace=True)
+        #self.mlp = nn.Linear(in_features=self.slot_dim, out_features=max(self.cfg.num_bins, 1))
+        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=1)
 
+    def forward(self, slots, action):
+        x = self.gnn(slots, action)
+        x = self.act(x)
+        reward = self.mlp(x.mean(dim=1))
+        return reward
 
+#TODO переделать потом под OC версию?
 class SupportLSTMNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, output_support_size, lstm_hidden_size, init_zero):
         super().__init__()
@@ -292,7 +346,7 @@ class SupportLSTMNetwork(nn.Module):
         x = self.fc(x)
         return x, hidden
 
-
+#TODO не нашел, где они используются
 class ProjectionNetwork(nn.Module):
     def __init__(self, input_dim, hid_dim, out_dim):
         super().__init__()

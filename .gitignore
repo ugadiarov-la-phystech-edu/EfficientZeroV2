@@ -17,6 +17,7 @@ __pycache__/
 /test*
 
 wandb
+world_model.py
 
 # c++/cython style external packages
 ez/mcts/ctree/cytree.cpp

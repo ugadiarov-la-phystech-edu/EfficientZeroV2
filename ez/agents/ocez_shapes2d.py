@@ -15,8 +15,8 @@ from ez.utils.format import DiscreteSupport
 from ez.agents.models import EfficientZero
 from ez.agents.models.base_model import *
 
-#TODO maker oc
-class EZShapes2dAgent(Agent):
+#TODO make OC версию
+class OCEZShapes2dAgent(Agent):
     def __init__(self, config):
         super().__init__(config)
 
