@@ -211,7 +211,7 @@ class ReplayBuffer:
                       'top_transitions': self.top_transitions, 'use_priority': self.use_priority, 'env': self.env,
                       'total_transitions': self.total_transitions, 'base_idx': self.base_idx,
                       'clear_time': self.clear_time}
-        f_attributes = open(os.path.join(path, 'attributes.b'), 'wb')
+        f_attributes = open(os.path.join(path, 'buffer_attributes.b'), 'wb')
         pickle.dump(attributes, f_attributes)
         f_attributes.close()
 
@@ -231,7 +231,7 @@ class ReplayBuffer:
         self.snapshots = pickle.load(f)
         f.close()
 
-        f_attributes = open(os.path.join(path, 'attributes.b'), 'rb')
+        f_attributes = open(os.path.join(path, 'buffer_attributes.b'), 'rb')
         attributes = pickle.load(f_attributes)
         f_attributes.close()
 

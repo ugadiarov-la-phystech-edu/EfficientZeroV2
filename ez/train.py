@@ -102,7 +102,7 @@ def train(rank, agent, manager, logger, config):
     storage_server, replay_buffer_server, watchdog_server, batch_storage = server_lst
 
     if config.ddp.training_size == 1:
-        final_weights, final_model = agent.train(rank, replay_buffer_server, storage_server, batch_storage, logger)
+        final_weights, final_model = agent.train(rank, replay_buffer_server, storage_server, batch_storage, logger, workers)
     else:
         from ez.agents.base import train_ddp
         time.sleep(1)

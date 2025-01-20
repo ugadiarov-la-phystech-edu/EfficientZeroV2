@@ -8,6 +8,7 @@ import os
 import time
 import ray
 import numpy as np
+import pickle
 
 @ray.remote
 class GlobalStorage:
@@ -98,6 +99,39 @@ class GlobalStorage:
         self.eval_log_scalar = {}
         self.log_distribution = {}
         return eval_scalar, scalar, distribution
+
+
+    def save_storage(self, path):
+        f_models = open(os.path.join(path, 'models.b'), 'wb')
+        pickle.dump(self.models, f_models)
+        f_models.close()
+
+        attributes = {'log_scalar': self.log_scalar,
+                      'eval_log_scalar': self.eval_log_scalar, 'log_distribution': self.log_distribution, 'counter': self.counter,
+                      'eval_counter': self.eval_counter, 'best_score': self.best_score}
+        f_attributes = open(os.path.join(path, 'glob_storage_attributes.b'), 'wb')
+        pickle.dump(attributes, f_attributes)
+        f_attributes.close()
+
+        return True
+
+
+    def load_storage(self, path):
+        f_models = open(os.path.join(path, 'models.b'), 'rb')
+        self.models = pickle.load(f_models)
+        f_models.close()
+
+        f_attributes = open(os.path.join(path, 'glob_storage_attributes.b'), 'rb')
+        attributes = pickle.load(f_attributes)
+        f_attributes.close()
+
+        self.log_scalar = attributes['log_scalar']
+        self.eval_log_scalar = attributes['eval_log_scalar']
+        self.log_distribution = attributes['log_distribution']
+        self.counter = attributes['counter']
+        self.eval_counter = attributes['eval_counter']
+        self.best_score = attributes['best_score']
+        return True
 
 # ======================================================================================================================
 # global storage server

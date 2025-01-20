@@ -12,6 +12,7 @@ import gym
 import imageio
 from PIL import Image, ImageDraw
 import numpy as np
+import pickle
 
 from torch.cuda.amp import autocast as autocast
 import torch.nn.functional as F
@@ -1000,7 +1001,53 @@ class BatchWorker(Worker):
             policy_lst = torch.cat(policy_lst)
         return state_lst, value_lst, policy_lst
 
+    def save_batch_worker(self, path):
+        attributes = {
+            'model_update_interval': self.model_update_interval, 'batch_storage': self.batch_storage,
+            'beta_schedule': self.beta_schedule, 'total_transitions': self.total_transitions,
+            'auto_td_steps': self.auto_td_steps, 'td_steps': self.td_steps,
+            'unroll_steps': self.unroll_steps, 'n_stack': self.n_stack,
+            'discount': self.discount, 'value_support': self.value_support,
+            'action_space_size': self.action_space_size, 'batch_size': self.batch_size,
+            'PER_alpha': self.PER_alpha, 'env': self.env,
+            'image_based': self.image_based, 'reanalyze_ratio': self.reanalyze_ratio,
+            'value_target': self.value_target, 'value_target_type': self.value_target_type,
+            'GAE_max_steps': self.GAE_max_steps, 'episodic': self.episodic,
+            'value_prefix': self.value_prefix, 'lstm_horizon_len': self.lstm_horizon_len,
+            'training_steps': self.training_steps, 'td_lambda': self.td_lambda,
+            'gray_scale': self.gray_scale, 'obs_shape': self.obs_shape, 'trajectory_size': self.trajectory_size,
+            'mixed_value_threshold': self.mixed_value_threshold, 'lstm_hidden_size': self.lstm_hidden_size,
+            'cnt': self.cnt
+        }
 
+        f_attributes = open(os.path.join(path, 'batch_worker_attributes.b'), 'wb')
+        pickle.dump(attributes, f_attributes)
+        f_attributes.close()
+
+        return True
+
+    def load_batch_worker(self, path):
+        f_attributes = open(os.path.join(path, 'batch_worker_attributes.b'), 'rb')
+        attributes = pickle.load(f_attributes)
+        f_attributes.close()
+
+        for attr_name, _ in attributes.items():
+            if attr_name == 'cnt':
+                self.cnt = attributes['cnt']
+                continue
+            if attr_name == 'beta_schedule':
+                self.beta_schedule = attributes['beta_schedule']
+                continue
+            #TODO Добавить batch_storage как аргумент методу?
+            # if attr_name == 'batch_storage':
+            #     self.batch_storage = attributes['batch_storage']
+            #     continue
+            if getattr(self, attr_name) != attributes[attr_name]:
+                raise ValueError(
+                    f'BatchWorker loading error. Inconsistent value of {attr_name}. Current value: {getattr(self, attr_name)}. In checkpoint: {attributes[attr_name]}.')
+
+
+        return True
 # ======================================================================================================================
 # batch worker
 # ======================================================================================================================

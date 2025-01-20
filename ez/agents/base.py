@@ -12,6 +12,7 @@ import torch
 import wandb
 import logging
 import random
+import pickle
 import numpy as np
 import torch.optim as optim
 import torch.distributed as dist
@@ -55,7 +56,7 @@ class Agent:
     def update_config(self):
         raise NotImplementedError
 
-    def train(self, rank, replay_buffer, storage, batch_storage, logger):
+    def train(self, rank, replay_buffer, storage, batch_storage, logger, workers):
         assert self._update
         # update image augmentation transform
         self.update_augmentation_transform()
@@ -204,10 +205,33 @@ class Agent:
             if is_main_process and step_count % self.config.train.save_ckpt_interval == 0:
                 cur_model_path = model_path / 'model_{}.p'.format(step_count)
                 torch.save(self.get_weights(model), cur_model_path)
+
+                cur_optim_path = model_path / 'optimizer_{}.p'.format(step_count)
+                torch.save(optimizer.state_dict(), cur_optim_path)
+
+                if scheduler is not None:
+                    cur_scheduler_path = model_path / 'scheduler_{}.p'.format(step_count)
+                    torch.save(scheduler.state_dict(), cur_scheduler_path)
+
                 buffer_path = model_path / 'buffer'
                 buffer_path.mkdir(parents=True, exist_ok=True)
                 is_buffer_saved = ray.get(replay_buffer.save_buffer.remote(str(buffer_path.resolve())))
-                assert is_buffer_saved
+
+                storage_path = model_path / 'storage'
+                storage_path.mkdir(parents=True, exist_ok=True)
+                is_storage_saved = ray.get(storage.save_storage.remote(str(storage_path.resolve())))
+
+                workers_path = model_path / 'workers'
+                workers_path.mkdir(parents=True, exist_ok=True)
+
+                #is_data_worker_saved = ray.get(workers[0][0].save_data_worker.remote(str(workers_path.resolve())))
+                #is_batch_worker_saved = ray.get(workers[1][0].save_batch_worker.remote(str(workers_path.resolve())))
+
+                batch_storage_path = open(os.path.join(storage_path, 'batch_storage.b'), 'wb')
+                pickle.dump(batch_storage, batch_storage_path)
+                batch_storage_path.close()
+
+                assert is_buffer_saved and is_storage_saved #and is_data_worker_saved and is_batch_worker_saved
 
             end_time = time.time()
             total_time += end_time - start_time

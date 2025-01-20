@@ -43,12 +43,12 @@ ddp:
   #  port: '12355'
 
 ray:
-  single_process: False
-  store_memory_gb: 100
+  single_process: True
+  store_memory_gb: 1
 
 # log
 log:
-  log_interval: 100    # prev 1000
+  log_interval: 1    # prev 1000
   log_smos: False
 
 # ===========================================================================
@@ -61,7 +61,7 @@ eval:
   save_path: test
   model_path: 'results/Atari/Breakout/EZ-V2-seed=0-2023-08-10 00:40:53/models/model_10000.p'
   model_path_new: 'results/Atari/Breakout/EZ-V2-seed=0-2023-08-10 00:40:53/models/model_80000.p'
-  n_episodes: 10  # 10 for training, 1 for eval.sh
+  n_episodes: 1  # 10 for training, 1 for eval.sh
   compare_value: False
   analysis_value: False
 
