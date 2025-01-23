@@ -102,10 +102,6 @@ class GlobalStorage:
 
 
     def save_storage(self, path):
-        f_models = open(os.path.join(path, 'models.b'), 'wb')
-        pickle.dump(self.models, f_models)
-        f_models.close()
-
         attributes = {'log_scalar': self.log_scalar,
                       'eval_log_scalar': self.eval_log_scalar, 'log_distribution': self.log_distribution, 'counter': self.counter,
                       'eval_counter': self.eval_counter, 'best_score': self.best_score}
@@ -117,11 +113,7 @@ class GlobalStorage:
 
 
     def load_storage(self, path):
-        f_models = open(os.path.join(path, 'models.b'), 'rb')
-        self.models = pickle.load(f_models)
-        f_models.close()
-
-        f_attributes = open(os.path.join(path, 'glob_storage_attributes.b'), 'rb')
+        f_attributes = open(os.path.join(path, 'storage/glob_storage_attributes.b'), 'rb')
         attributes = pickle.load(f_attributes)
         f_attributes.close()
 

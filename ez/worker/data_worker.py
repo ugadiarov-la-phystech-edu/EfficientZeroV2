@@ -9,7 +9,6 @@ import time
 import ray
 import torch
 import numpy as np
-import pickle
 
 from torch.nn import L1Loss
 from pathlib import Path
@@ -272,34 +271,6 @@ class DataWorker(Worker):
             self.replay_buffer.save_pools.remote(self.traj_pool, priorities)
             del self.traj_pool[:]
 
-
-    def save_data_worker(self, path):
-        attributes = {
-            'model_update_interval': self.model_update_interval, 'pool_size': self.pool_size, 
-            'traj_pool': self.traj_pool
-        }
-
-        f_attributes = open(os.path.join(path, 'data_worker_attributes.b'), 'wb')
-        pickle.dump(attributes, f_attributes)
-        f_attributes.close()
-
-        return True
-
-    def load_data_worker(self, path):
-        f_attributes = open(os.path.join(path, 'data_worker_attributes.b'), 'rb')
-        attributes = pickle.load(f_attributes)
-        f_attributes.close()
-
-        for attr_name, _ in attributes.items():
-            if attr_name == 'traj_pool':
-                self.traj_pool = attributes['traj_pool']
-                continue
-            if getattr(self, attr_name) != attributes[attr_name]:
-                raise ValueError(
-                    f'BatchWorker loading error. Inconsistent value of {attr_name}. Current value: {getattr(self, attr_name)}. In checkpoint: {attributes[attr_name]}.')
-
-
-        return True
 # ======================================================================================================================
 # data worker for self-play
 # ======================================================================================================================

@@ -51,6 +51,10 @@ log:
   log_interval: 1    # prev 1000
   log_smos: False
 
+resume:
+  wandb_id: ''
+  load_path: '/home/rodya-rad/Desktop/mipt/EfficientZeroV2/ez/results/Atari/Asterix/EZ-V2-seed=0-2025-01-23 12:41:09/models'
+
 # ===========================================================================
 # evaluation
 # ===========================================================================

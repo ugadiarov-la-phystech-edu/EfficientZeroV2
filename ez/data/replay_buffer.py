@@ -218,20 +218,20 @@ class ReplayBuffer:
         return True
 
     def load_buffer(self, path):
-        f = open(os.path.join(path, 'buffer.b'), 'rb')
+        f = open(os.path.join(path, 'buffer/buffer.b'), 'rb')
         self.buffer = pickle.load(f)
         f.close()
-        f = open(os.path.join(path, 'priorities.b'), 'rb')
+        f = open(os.path.join(path, 'buffer/priorities.b'), 'rb')
         self.priorities = pickle.load(f)
         f.close()
-        f = open(os.path.join(path, 'lookup.b'), 'rb')
+        f = open(os.path.join(path, 'buffer/lookup.b'), 'rb')
         self.transition_idx_look_up = pickle.load(f)
         f.close()
-        f = open(os.path.join(path, 'snapshots.b'), 'rb')
+        f = open(os.path.join(path, 'buffer/snapshots.b'), 'rb')
         self.snapshots = pickle.load(f)
         f.close()
 
-        f_attributes = open(os.path.join(path, 'buffer_attributes.b'), 'rb')
+        f_attributes = open(os.path.join(path, 'buffer/buffer_attributes.b'), 'rb')
         attributes = pickle.load(f_attributes)
         f_attributes.close()
 

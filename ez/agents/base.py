@@ -6,6 +6,7 @@
 import copy
 import os
 import time
+import glob
 # import SMOS
 import ray
 import torch
@@ -56,7 +57,7 @@ class Agent:
     def update_config(self):
         raise NotImplementedError
 
-    def train(self, rank, replay_buffer, storage, batch_storage, logger, workers):
+    def train(self, rank, replay_buffer, storage, batch_storage, logger):
         assert self._update
         # update image augmentation transform
         self.update_augmentation_transform()
@@ -77,11 +78,18 @@ class Agent:
         model = self.build_model().cuda()
         target_model = self.build_model().cuda()
         # load model
-        load_path = self.config.train.load_model_path
+        #load_path = self.config.train.load_model_path
+        load_path = self.config.resume.load_path
         if os.path.exists(load_path):
             if is_main_process:
                 train_logger.info('resume model from path: {}'.format(load_path))
-            weights = torch.load(load_path)
+
+            storage.load_storage.remote(load_path)
+            replay_buffer.load_buffer.remote(load_path)
+
+            models_path = os.path.join(load_path, 'model.p')
+            weights = torch.load(models_path)
+            #weights = {key.replace("_orig_mod.", ""): value for key, value in weights.items()}
             storage.set_weights.remote(weights, 'self_play')
             storage.set_weights.remote(weights, 'reanalyze')
             storage.set_weights.remote(weights, 'latest')
@@ -124,7 +132,19 @@ class Agent:
         else:
             scheduler = None
 
+        if os.path.exists(load_path):
+            optimizer_path = os.path.join(load_path, 'optimizer.p')
+            optimizer.load_state_dict(torch.load(optimizer_path))
+
+            if scheduler is not None:
+                scheduler_path = os.path.join(load_path, 'scheduler.p')
+                scheduler.load_state_dict(torch.load(scheduler_path))
+
+
         scaler = GradScaler()
+        if os.path.exists(load_path):
+            scaler_path = os.path.join(load_path, 'scaler.p')
+            scaler.load_state_dict(torch.load(scaler_path))
 
         # wait until collecting enough data to start
         while not (ray.get(replay_buffer.get_transition_num.remote()) >= self.config.train.start_transitions):
@@ -135,7 +155,7 @@ class Agent:
         # set signals for other workers
         if is_main_process:
             storage.set_start_signal.remote()
-        step_count = 0
+        step_count = ray.get(storage.get_counter.remote()) if os.path.exists(load_path) else 0
 
         # Note: the interval of the current model and the target model is between x and 2x. (x = target_model_interval)
         # recent_weights is the param of the target model
@@ -195,6 +215,7 @@ class Agent:
             scalers, log_data = self.update_weights(model, batch, optimizer, replay_buffer, scaler, step_count, target_model=target_model)
             scaler = scalers[0]
 
+
             loss_data, other_scalar, other_distribution = log_data
 
             # TODO: maybe this barrier can be removed
@@ -203,14 +224,17 @@ class Agent:
 
             # save models
             if is_main_process and step_count % self.config.train.save_ckpt_interval == 0:
-                cur_model_path = model_path / 'model_{}.p'.format(step_count)
+                cur_model_path = model_path / 'model.p'
                 torch.save(self.get_weights(model), cur_model_path)
 
-                cur_optim_path = model_path / 'optimizer_{}.p'.format(step_count)
+                cur_optim_path = model_path / 'optimizer.p'
                 torch.save(optimizer.state_dict(), cur_optim_path)
 
+                cur_scaler_path = model_path / 'scaler.p'
+                torch.save(scaler.state_dict(), cur_scaler_path)
+
                 if scheduler is not None:
-                    cur_scheduler_path = model_path / 'scheduler_{}.p'.format(step_count)
+                    cur_scheduler_path = model_path / 'scheduler.p'
                     torch.save(scheduler.state_dict(), cur_scheduler_path)
 
                 buffer_path = model_path / 'buffer'
@@ -221,17 +245,7 @@ class Agent:
                 storage_path.mkdir(parents=True, exist_ok=True)
                 is_storage_saved = ray.get(storage.save_storage.remote(str(storage_path.resolve())))
 
-                workers_path = model_path / 'workers'
-                workers_path.mkdir(parents=True, exist_ok=True)
-
-                #is_data_worker_saved = ray.get(workers[0][0].save_data_worker.remote(str(workers_path.resolve())))
-                #is_batch_worker_saved = ray.get(workers[1][0].save_batch_worker.remote(str(workers_path.resolve())))
-
-                batch_storage_path = open(os.path.join(storage_path, 'batch_storage.b'), 'wb')
-                pickle.dump(batch_storage, batch_storage_path)
-                batch_storage_path.close()
-
-                assert is_buffer_saved and is_storage_saved #and is_data_worker_saved and is_batch_worker_saved
+                assert is_buffer_saved and is_storage_saved
 
             end_time = time.time()
             total_time += end_time - start_time

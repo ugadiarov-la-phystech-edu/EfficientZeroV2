@@ -4,6 +4,7 @@
 # found in the LICENSE file in the root directory of this source tree.
 
 import os
+import glob
 import time
 import torch
 import ray
@@ -60,7 +61,9 @@ class Worker:
         load_path = self.config.train.load_model_path
         if os.path.exists(load_path):
             print('[Worker] resume model from path: ', load_path)
-            weights = torch.load(load_path)
+            model_path = os.path.join(load_path, 'model.p')
+            weights = torch.load(model_path)
+            weights = {"_orig_mod." + key: value for key, value in weights.items()}
             self.model.load_state_dict(weights)
 
     def is_finished(self, trained_steps):
