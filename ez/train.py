@@ -67,6 +67,8 @@ def start_ddp_trainer(rank, config):
             logger = wandb.init(
                 name=wandb_name,
                 project=config.wandb.project,
+                id=config.resume.wandb_id,
+                resume='allow'
                 # config=config,
             )
         else:

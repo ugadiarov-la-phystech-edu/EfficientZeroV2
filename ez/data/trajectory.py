@@ -100,8 +100,8 @@ class GameTrajectory:
         post processing the data when a history block is full
         """
         # convert to numpy
-        self.obs_lst = ray.put(np.array(self.obs_lst))
-        # self.obs_lst = np.array(self.obs_lst)
+        #self.obs_lst = ray.put(np.array(self.obs_lst))
+        self.obs_lst = np.array(self.obs_lst)
         self.reward_lst = np.array(self.reward_lst)
         self.policy_lst = np.array(self.policy_lst)
         self.action_lst = np.array(self.action_lst)
@@ -253,8 +253,8 @@ class GameTrajectory:
             True -> padding frames if (t + stack frames) are out of trajectory
         """
         unroll_steps = self.unroll_steps + extra
-        frames = ray.get(self.obs_lst)[index:index + self.n_stack + unroll_steps]
-        # frames = self.obs_lst[index:index + self.n_stack + unroll_steps]
+        #frames = ray.get(self.obs_lst)[index:index + self.n_stack + unroll_steps]
+        frames = self.obs_lst[index:index + self.n_stack + unroll_steps]
         if padding:
             pad_len = self.n_stack + unroll_steps - len(frames)
             if pad_len > 0:

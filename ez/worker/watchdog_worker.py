@@ -26,22 +26,6 @@ class WatchdogServer(object):
     def get_training_step_count(self):
         return self.training_step_count
 
-    def save_wathcdog(self, path):
-        watchdog = {'reanalyze_batch_count': self.reanalyze_batch_count, 'training_step_count': self.training_step_count}
-        f_watchdog = open(os.path.join(path, 'watchdog.b'), 'wb')
-        pickle.dump(watchdog, f_watchdog)
-        f_watchdog.close()
-
-        return True
-
-    def load_watchdog(self, path):
-        f_watchdog = open(os.path.join(path, 'watchdog.b'), 'rb')
-        watchdog = pickle.load(f_watchdog)
-        f_watchdog.close()
-
-        self.reanalyze_batch_count = watchdog['reanalyze_batch_count']
-        self.training_step_count = watchdog['training_step_count']
-
 
 # ======================================================================================================================
 # watchdog server
