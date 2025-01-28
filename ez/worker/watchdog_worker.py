@@ -6,6 +6,7 @@
 import os
 import time
 import ray
+import pickle
 
 @ray.remote
 class WatchdogServer(object):

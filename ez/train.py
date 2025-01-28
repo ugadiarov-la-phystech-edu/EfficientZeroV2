@@ -54,8 +54,8 @@ def start_ddp_trainer(rank, config):
     manager = None
     num_gpus = torch.cuda.device_count()
     num_cpus = multiprocessing.cpu_count()
-    #ray.init(num_gpus=num_gpus, num_cpus=num_cpus, object_store_memory=150 * 1024 * 1024 * 1024 if config.env.image_based else 100 * 1024 * 1024 * 1024)
-    ray.init(num_gpus=num_gpus, num_cpus=num_cpus, object_store_memory=1 * 1024 * 1024 * 1024 if config.env.image_based else 5 * 1024 * 1024 * 1024)
+    store_memory = int(config.ray.store_memory_gb * 1024 * 1024 * 1024)
+    ray.init(num_gpus=num_gpus, num_cpus=num_cpus, object_store_memory=store_memory)
     set_seed(config.env.base_seed + rank >= 0)              # set seed
     # set log
 
@@ -67,6 +67,8 @@ def start_ddp_trainer(rank, config):
             logger = wandb.init(
                 name=wandb_name,
                 project=config.wandb.project,
+                id=config.resume.wandb_id,
+                resume='allow'
                 # config=config,
             )
         else:
