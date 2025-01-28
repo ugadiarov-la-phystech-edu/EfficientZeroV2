@@ -823,7 +823,7 @@ def train_ddp(agent, rank, replay_buffer, storage, batch_storage, logger):
     # set signals for other workers
     if is_main_process:
         storage.set_start_signal.remote()
-    step_count = 0
+    step_count = ray.get(storage.get_counter.remote()) if os.path.exists(load_path) else 0
 
     # Note: the interval of the current model and the target model is between x and 2x. (x = target_model_interval)
     # recent_weights is the param of the target model
