@@ -88,6 +88,9 @@ class DataWorker(Worker):
                 time.sleep(1)
                 continue
 
+            if os.path.exists(self.config.resume.load_path):
+                prev_train_steps = ray.get(self.storage.get_counter.remote())
+
             if self.config.ray.single_process:
                 trained_steps = ray.get(self.storage.get_counter.remote())
                 if start_training and trained_steps <= prev_train_steps:

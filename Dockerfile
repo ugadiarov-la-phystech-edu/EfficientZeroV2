@@ -16,10 +16,10 @@ RUN apt-get update && apt-get install -y software-properties-common && \
     ffmpeg \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN ln -s /usr/bin/python3.8 /usr/bin/python
-
 WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
 
-RUN python -m pip install --no-cache-dir -r requirements.txt
+RUN python3.8 -m pip install --no-cache-dir -r requirements.txt
+
+RUN ln -s /usr/bin/python3.8 /usr/bin/python

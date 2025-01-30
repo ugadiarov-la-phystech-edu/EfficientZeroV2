@@ -16,8 +16,8 @@ __pycache__/
 /files
 /test*
 
-wandb
-world_model.py
+ez/wandb
+ez/results
 
 # c++/cython style external packages
 ez/mcts/ctree/cytree.cpp

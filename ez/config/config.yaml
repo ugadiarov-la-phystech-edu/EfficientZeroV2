@@ -52,8 +52,8 @@ log:
   log_smos: False
 
 resume:
-  wandb_id: '4b0jz2vl'
-  load_path: '/home/rodya-rad/Desktop/mipt/EfficientZeroV2/ez/results/Atari/Asterix/EZ-V2-seed=0-2025-01-24 17:23:09/models'
+  wandb_id: ''
+  load_path: ''
 
 # ===========================================================================
 # evaluation

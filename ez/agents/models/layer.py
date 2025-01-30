@@ -6,7 +6,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils.extra import *
+from ez.utils.extra import *
 
 # Post Activated Residual block
 class ResidualBlock(nn.Module):
