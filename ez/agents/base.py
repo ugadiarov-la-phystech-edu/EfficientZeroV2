@@ -80,7 +80,6 @@ class Agent:
         model = self.build_model().cuda()
         target_model = self.build_model().cuda()
         # load model
-        #load_path = self.config.train.load_model_path
         load_path = self.config.resume.load_path
         if os.path.exists(load_path):
             if is_main_process:
@@ -157,6 +156,7 @@ class Agent:
         if is_main_process:
             storage.set_start_signal.remote()
         step_count = ray.get(storage.get_counter.remote()) if os.path.exists(load_path) else 0
+        start_step = (step_count // 50) * 50 if os.path.exists(load_path) else 0
 
         # Note: the interval of the current model and the target model is between x and 2x. (x = target_model_interval)
         # recent_weights is the param of the target model
@@ -166,7 +166,7 @@ class Agent:
         total_time = 0
         total_steps = self.config.train.training_steps + self.config.train.offline_training_steps
         if is_main_process:
-            pb = tqdm(np.arange(total_steps), leave=True)
+            pb = tqdm(np.arange(total_steps), initial=start_step, leave=True)
 
         # while loop
         self_play_reteurn = 0.

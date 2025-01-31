@@ -43,6 +43,8 @@ class DataWorker(Worker):
             self.model = torch.compile(self.model)
         self.model.eval()
         self.resume_model()
+        if os.path.exists(self.config.resume.load_path):
+            prev_train_steps = ray.get(self.storage.get_counter.remote())
 
         # make env
         num_envs = config.data.num_envs
@@ -87,9 +89,6 @@ class DataWorker(Worker):
             if start_training and (collected_transitions / max_transitions) > (trained_steps / self.config.train.training_steps):
                 time.sleep(1)
                 continue
-
-            if os.path.exists(self.config.resume.load_path):
-                prev_train_steps = ray.get(self.storage.get_counter.remote())
 
             if self.config.ray.single_process:
                 trained_steps = ray.get(self.storage.get_counter.remote())
