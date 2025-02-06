@@ -15,7 +15,7 @@ from ez.utils.format import DiscreteSupport
 from ez.agents.models import EfficientZero
 from ez.agents.models.base_model import *
 
-#TODO make OC версию
+
 class OCEZShapes2dAgent(Agent):
     def __init__(self, config):
         super().__init__(config)
@@ -89,12 +89,12 @@ class OCEZShapes2dAgent(Agent):
         state_dim = state_shape[0] * state_shape[1] * state_shape[2]
         flatten_size = self.reduced_channels * state_shape[1] * state_shape[2]
 
-        representation_model = RepresentationNetwork(self.input_shape, self.num_blocks, self.num_channels, self.down_sample)
+        representation_model = OCRepresentationNetwork(self.input_shape, self.num_blocks, self.num_channels, self.down_sample)
 
-        dynamics_model = DynamicsNetwork(self.num_blocks, self.num_channels, self.action_space_size,
+        dynamics_model = OCDynamicsNetwork(self.num_blocks, self.num_channels, self.action_space_size,
                                          action_embedding=self.action_embedding, action_embedding_dim=self.action_embedding_dim)
 
-        value_policy_model = ValuePolicyNetwork(self.num_blocks, self.num_channels, self.reduced_channels, flatten_size,
+        value_policy_model = OCValuePolicyNetwork(self.num_blocks, self.num_channels, self.reduced_channels, flatten_size,
                                                      self.fc_layers, self.config.model.value_support.size,
                                                      self.action_space_size, self.init_zero,
                                                      value_policy_detach=self.value_policy_detach,
@@ -102,11 +102,11 @@ class OCEZShapes2dAgent(Agent):
 
         reward_output_size = self.config.model.reward_support.size
         if self.value_prefix:
-            reward_prediction_model = SupportLSTMNetwork(0, self.num_channels, self.reduced_channels,
+            reward_prediction_model = OCSupportLSTMNetwork(0, self.num_channels, self.reduced_channels,
                                            flatten_size, self.fc_layers, reward_output_size,
                                            self.config.model.lstm_hidden_size, self.init_zero)
         else:
-            reward_prediction_model = SupportNetwork(self.num_blocks, self.num_channels, self.reduced_channels,
+            reward_prediction_model = OCSupportNetwork(self.num_blocks, self.num_channels, self.reduced_channels,
                                            flatten_size, self.fc_layers, reward_output_size,
                                            self.init_zero)
 
@@ -114,7 +114,7 @@ class OCEZShapes2dAgent(Agent):
         head_layers = self.config.model.prjection_head_layers
         assert projection_layers[1] == head_layers[1]
 
-        projection_model = ProjectionNetwork(state_dim, projection_layers[0], projection_layers[1])
+        projection_model = OCProjectionNetwork(state_dim, projection_layers[0], projection_layers[1])
         projection_head_model = ProjectionHeadNetwork(projection_layers[1], head_layers[0], head_layers[1])
 
         ez_model = EfficientZero(representation_model, dynamics_model, reward_prediction_model, value_policy_model,

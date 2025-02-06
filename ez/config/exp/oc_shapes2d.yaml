@@ -109,6 +109,10 @@ mcts:
   mpc_horizon: 1
   use_gumbel: True
 
+object-centric:
+  ocr_config_path: 'ocr/slate/config/navigation5x5.yaml'
+
+
 # model architecture
 model:
   noisy_net: False

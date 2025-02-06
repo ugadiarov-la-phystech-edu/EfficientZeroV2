@@ -48,6 +48,7 @@ def main(config):
 
 
 def start_ddp_trainer(rank, config):
+    torch.set_float32_matmul_precision('medium')
     assert rank >= 0
     print(f'start {rank} train worker...')
     agent = agents.names[config.agent_name](config)         # update config

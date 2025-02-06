@@ -43,8 +43,6 @@ class DataWorker(Worker):
             self.model = torch.compile(self.model)
         self.model.eval()
         self.resume_model()
-        if os.path.exists(self.config.resume.load_path):
-            prev_train_steps = ray.get(self.storage.get_counter.remote())
 
         # make env
         num_envs = config.data.num_envs
@@ -73,6 +71,7 @@ class DataWorker(Worker):
         episode_return = [0. for _ in range(num_envs)]
 
         # while loop for collecting data
+        prev_train_steps = -10
         while not self.is_finished(trained_steps):
             trained_steps = ray.get(self.storage.get_counter.remote())
             if not start_training:
