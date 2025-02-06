@@ -50,7 +50,7 @@ export HYDRA_FULL_ERROR=1
 # export MASTER_PORT='12300'
 
 # Atari
-python ez/train.py exp_config=ez/config/exp/atari.yaml 
+python ez/train.py exp_config=ez/config/exp/atari_test.yaml 
 # DMC state
 python ez/train.py exp_config=ez/config/exp/dmc_state.yaml
 # DMC image

@@ -1,14 +1,14 @@
 # agent
-agent_name: atari_agent
+agent_name: oc_shapes2d_agent
 
 # env setting
 env:
-  env: Atari
-  game: Pong
+  env: Shapes2d
+  game: Navigation5x5-v0
   base_seed: 0
-  n_skip: 4
+  n_skip: 0
   n_stack: 4
-  max_episode_steps: 3000 # 27000 for final test
+  max_episode_steps: 100
   gray_scale: False
   image_based: True
   clip_reward: True
@@ -109,6 +109,10 @@ mcts:
   mpc_horizon: 1
   use_gumbel: True
 
+object-centric:
+  ocr_config_path: 'ocr/slate/config/navigation5x5.yaml'
+
+
 # model architecture
 model:
   noisy_net: False
@@ -135,22 +139,22 @@ model:
   reward_support:
     range: [-300, 300]
     scale: 1
-    env: Atari
+    env: Shapes2d
     bins: 51
     type: support   # support or symlog
   value_support:
     range: [-300, 300]
     scale: 1
-    env: Atari
+    env: Shapes2d
     bins: 51
-    type: support   # support or symlog
+    type: support  # support or symlog
 
 # worker process allocation
 actors:
   data_worker: 1
-  batch_worker: 8  # oriMCTS 16
+  batch_worker: 1  # oriMCTS 16
 
 # wandb
 wandb:
   project: 'ez-v2-release'
-  tag: 'Atari'
+  tag: 'Shapes2d'
