@@ -1,5 +1,6 @@
 torch==2.0.1
 numpy==1.20.0
+torchvision==0.15.2
 gym==0.22.0
 gym[atari]==0.22.0
 gym[accept-rom-license]==0.22.0
@@ -18,7 +19,7 @@ ray==1.0.0
 torchrl==0.1.0
 git+https://gitclone.com/github.com/denisyarats/dmc2gym.git
 tensordict==0.2.0
-pillow==8.3.2
+pillow>=5.3.0
 colorednoise==2.2.0
 matplotlib==3.3.4
 scikit-image==0.18.3

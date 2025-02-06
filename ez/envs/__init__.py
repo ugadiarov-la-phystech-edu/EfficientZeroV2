@@ -107,8 +107,8 @@ def make_atari(game_name, seed, save_path=None, **kwargs):
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
     # save video to given
-    if save_path:
-        env = Monitor(env, directory=save_path, force=True)
+    # if save_path:
+    #     env = Monitor(env, directory=save_path, force=True)
 
     # your wrapper
     env = AtariWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)

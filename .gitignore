@@ -15,6 +15,7 @@ __pycache__/
 /results
 /files
 /test*
+.wandb
 
 ez/wandb
 ez/results
