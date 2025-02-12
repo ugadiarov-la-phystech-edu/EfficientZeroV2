@@ -264,12 +264,10 @@ class OCValuePolicyNetwork(nn.Module):
                               action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
                               copy_action=True, edge_actions=True)
         self.mlp_policy = nn.Linear(in_features=self.slot_dim, out_features=policy_output_size)
-        # self.mlp_policy = mlp(...)
         self.gnn_value = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim,
                               action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
                               copy_action=True, edge_actions=True)
         self.mlp_value = nn.Linear(in_features=self.slot_dim, out_features=value_output_size)
-        #self.mlp_value = mlp(...)
         self.mlp = nn.Linear(in_features=self.slot_dim, out_features=1)
         self.act = nn.ReLU(inplace=True)
 
@@ -315,7 +313,6 @@ class OCSupportNetwork(nn.Module):
                               copy_action=True, edge_actions=True)
         self.act = nn.ReLU(inplace=True)
         self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
-        #self.mlp = mlp(...)
 
     def forward(self, slots):
         x = self.gnn(slots, action=None)
@@ -349,7 +346,7 @@ class SupportLSTMNetwork(nn.Module):
         return x, hidden
 
 class OCSupportLSTMNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, action_space_size, n_slots, flatten_size, fc_layers, output_support_size, lstm_hidden_size, init_zero):
+    def __init__(self, slot_dim, latent_dim, action_space_size, n_slots, output_support_size, lstm_hidden_size):
         super().__init__()
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
@@ -359,21 +356,17 @@ class OCSupportLSTMNetwork(nn.Module):
                               action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
                               copy_action=True, edge_actions=True)
         self.act = nn.ReLU(inplace=True)
-        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
-        #self.mlp = mlp(...)
-        self.lstm = nn.LSTM(input_size=output_support_size, hidden_size=lstm_hidden_size)
-        self.bn_reward_sum = nn.BatchNorm1d(lstm_hidden_size)
-        self.fc = mlp(lstm_hidden_size, fc_layers, output_support_size, init_zero=init_zero)
+        self.lstm = nn.LSTM(input_size=self.slot_dim, hidden_size=lstm_hidden_size)
+        self.mlp = nn.Linear(in_features=lstm_hidden_size, out_features=output_support_size)
+        #self.bn_reward_sum = nn.BatchNorm1d(lstm_hidden_size)
+        #self.fc = mlp(lstm_hidden_size, fc_layers, output_support_size, init_zero=init_zero)
 
     def forward(self, slots, hidden):
         x = self.gnn(slots, action=None)
         x = self.act(x)
-        x = self.mlp(x.mean(dim=1))
-        x, hidden = self.lstm(x, hidden)
+        x, hidden = self.lstm(x.mean(dim=1), hidden)
         x = x.squeeze(0)
-        x = self.bn_reward_sum(x)
-        x = nn.functional.relu(x)
-        x = self.fc(x)
+        x = self.mlp_out(x)
         return x, hidden
 
 
@@ -400,7 +393,7 @@ class ProjectionNetwork(nn.Module):
         return self.layer(x)
 
 class OCProjectionNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, action_space_size, output_projection_size, n_slots, input_dim, hid_dim, out_dim):
+    def __init__(self, slot_dim, latent_dim, action_space_size, n_slots, hid_dim, out_dim):
         super().__init__()
         super().__init__()
         self.slot_dim = slot_dim
@@ -411,9 +404,8 @@ class OCProjectionNetwork(nn.Module):
                               action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
                               copy_action=True, edge_actions=True)
         self.act = nn.ReLU(inplace=True)
-        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_projection_size)
         self.layer = nn.Sequential(
-            nn.Linear(output_projection_size, hid_dim),
+            nn.Linear(self.slot_dim, hid_dim),
             nn.BatchNorm1d(hid_dim),
             nn.ReLU(),
 
@@ -428,8 +420,8 @@ class OCProjectionNetwork(nn.Module):
     def forward(self, slots):
         x = self.gnn(slots, action=None)
         x = self.act(x)
-        x = self.mlp(x.mean(dim=1))
-        return self.layer(x)
+        x = self.layer(x.mean(dim=1))
+        return x
 
 class ProjectionHeadNetwork(nn.Module):
     def __init__(self, input_dim, hid_dim, out_dim):

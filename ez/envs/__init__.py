@@ -133,8 +133,8 @@ def make_gym(game_name, seed, save_path=None, **kwargs):
     env.seed(seed)
     
     #save video to given
-    if save_path:
-        env = Monitor(env, directory=save_path, force=True)
+    # if save_path:
+    #     env = Monitor(env, directory=save_path, force=True)
     env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
@@ -185,8 +185,8 @@ def make_dmc(game_name, seed, save_path=None, **kwargs):
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
     # save video to given
-    if save_path:
-        env = Monitor(env, directory=save_path, force=True)
+    # if save_path:
+    #     env = Monitor(env, directory=save_path, force=True)
 
     # your wrapper
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)

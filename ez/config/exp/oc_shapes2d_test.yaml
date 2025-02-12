@@ -12,7 +12,7 @@ env:
   gray_scale: False
   image_based: True
   clip_reward: True
-  obs_shape: [3, 96, 96]
+  obs_shape: [3, 64, 64]
   episodic: True
 
 rl:
@@ -44,19 +44,19 @@ priority:
 # training
 train:
   load_model_path: ''
-  batch_size: 256
-  training_steps: 100000        # 100 * 1000
-  offline_training_steps: 20000 # 20 * 1000
-  start_transitions: 2000       # 2 * 1000
+  batch_size: 2
+  training_steps: 10000        # 100 * 1000
+  offline_training_steps: 10 # 20 * 1000
+  start_transitions: 10       # 2 * 1000
 
-  eval_n_episode: 10
+  eval_n_episode: 1
   eval_interval: 10000
 
-  self_play_update_interval: 100
-  reanalyze_update_interval: 200
-  save_ckpt_interval: 10000
+  self_play_update_interval: 5
+  reanalyze_update_interval: 5
+  save_ckpt_interval: 20
 
-  mini_batch_size: 256
+  mini_batch_size: 2
   reanalyze_ratio: 1.0
 
   reward_loss_coeff: 1.0
@@ -85,11 +85,11 @@ train:
 
 # self-play data collection
 data:
-  num_envs: 4
-  buffer_size: 1000000      # 1 * 1000 * 1000
+  num_envs: 2
+  buffer_size: 1000     # 1 * 1000 * 1000
   total_transitions: 100000 # 100 * 1000
   top_transitions: 2e5
-  trajectory_size: 400
+  trajectory_size: 10
   save_video: False
   save_as_dataset: False
 
@@ -109,8 +109,13 @@ mcts:
   mpc_horizon: 1
   use_gumbel: True
 
-object-centric:
+oc:
   ocr_config_path: 'ocr/slate/config/navigation5x5.yaml'
+  checkpoint_path: 'navigation5x5/model_best_new.pth'
+  device: 'cuda'
+  n_slots: 5
+  slot_dim: 64
+  latent_dim: 512
 
 
 # model architecture

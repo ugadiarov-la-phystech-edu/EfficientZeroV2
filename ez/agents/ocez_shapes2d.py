@@ -17,22 +17,22 @@ from ez.agents.models.base_model import *
 
 
 class OCEZShapes2dAgent(Agent):
-    def __init__(self, config):
+    def __init__(self, config, centric=None):
         super().__init__(config)
 
         self.update_config()
 
-        self.num_blocks = config.model.num_blocks
-        self.num_channels = config.model.num_channels
-        self.reduced_channels = config.model.reduced_channels
-        self.fc_layers = config.model.fc_layers
-        self.down_sample = config.model.down_sample
         self.state_norm = config.model.state_norm
         self.value_prefix = config.model.value_prefix
-        self.init_zero = config.model.init_zero
-        self.action_embedding = config.model.action_embedding
-        self.action_embedding_dim = config.model.action_embedding_dim
-        self.value_policy_detach = config.train.value_policy_detach
+        #self.action_embedding = config.model.action_embedding
+        #self.action_embedding_dim = config.model.action_embedding_dim
+
+        self.slate_config = self.config.oc.ocr_config_path
+        self.slate_weights = self.config.oc.checkpoint_path
+        self.slate_device = self.config.oc.device
+        self.slot_dim = self.config.oc.slot_dim
+        self.n_slots = self.config.oc.n_slots
+        self.latent_dim = self.config.oc.latent_dim
 
     def update_config(self):
         assert not self._update
@@ -74,47 +74,30 @@ class OCEZShapes2dAgent(Agent):
             self.config.save_path += tag
 
         self.obs_shape = copy.deepcopy(self.config.env.obs_shape)
-        self.input_shape = copy.deepcopy(self.config.env.obs_shape)
-        self.input_shape[0] *= self.config.env.n_stack
         self.action_space_size = self.config.env.action_space_size
 
         self._update = True
 
     def build_model(self):
-        if self.down_sample:
-            state_shape = (self.num_channels, math.ceil(self.obs_shape[1] / 16), math.ceil(self.obs_shape[2] / 16))
-        else:
-            state_shape = (self.num_channels, self.obs_shape[1], self.obs_shape[2])
+        representation_model = OCRepresentationNetwork(self.slate_config, self.obs_shape[2], self.slate_weights, self.slate_device)
 
-        state_dim = state_shape[0] * state_shape[1] * state_shape[2]
-        flatten_size = self.reduced_channels * state_shape[1] * state_shape[2]
+        dynamics_model = OCDynamicsNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots)
 
-        representation_model = OCRepresentationNetwork(self.input_shape, self.num_blocks, self.num_channels, self.down_sample)
-
-        dynamics_model = OCDynamicsNetwork(self.num_blocks, self.num_channels, self.action_space_size,
-                                         action_embedding=self.action_embedding, action_embedding_dim=self.action_embedding_dim)
-
-        value_policy_model = OCValuePolicyNetwork(self.num_blocks, self.num_channels, self.reduced_channels, flatten_size,
-                                                     self.fc_layers, self.config.model.value_support.size,
-                                                     self.action_space_size, self.init_zero,
-                                                     value_policy_detach=self.value_policy_detach,
-                                                     v_num=self.config.train.v_num)
+        value_policy_model = OCValuePolicyNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots,
+                                                  self.config.model.value_support.size, self.action_space_size)
 
         reward_output_size = self.config.model.reward_support.size
         if self.value_prefix:
-            reward_prediction_model = OCSupportLSTMNetwork(0, self.num_channels, self.reduced_channels,
-                                           flatten_size, self.fc_layers, reward_output_size,
-                                           self.config.model.lstm_hidden_size, self.init_zero)
+            reward_prediction_model = OCSupportLSTMNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots,
+                                                           reward_output_size, self.config.model.lstm_hidden_size)
         else:
-            reward_prediction_model = OCSupportNetwork(self.num_blocks, self.num_channels, self.reduced_channels,
-                                           flatten_size, self.fc_layers, reward_output_size,
-                                           self.init_zero)
+            reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots, reward_output_size)
 
         projection_layers = self.config.model.projection_layers
         head_layers = self.config.model.prjection_head_layers
         assert projection_layers[1] == head_layers[1]
 
-        projection_model = OCProjectionNetwork(state_dim, projection_layers[0], projection_layers[1])
+        projection_model = OCProjectionNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots, projection_layers[0], projection_layers[1])
         projection_head_model = ProjectionHeadNetwork(projection_layers[1], head_layers[0], head_layers[1])
 
         ez_model = EfficientZero(representation_model, dynamics_model, reward_prediction_model, value_policy_model,
