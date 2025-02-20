@@ -2,6 +2,7 @@ import math
 import os
 from functools import partial
 from pathlib import Path
+import wandb
 
 # Types
 from typing import Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
@@ -80,30 +81,6 @@ def get_log_prefix(config):
         prefix += f"-{config.pooling.name}"
     return prefix
 
-
-def init_wandb(config, log_name, tags="", sync_tensorboard=None, monitor_gym=None):
-    if config.wandb.offline:
-        os.environ["WANDB_MODE"] = "offline"
-    else:
-        os.environ["WANDB_MODE"] = "online"
-    wandb.config = omegaconf.OmegaConf.to_container(
-        config, resolve=True, throw_on_missing=True
-    )
-    run = wandb.init(
-        entity=config.wandb.entity,
-        project=config.wandb.project,
-        config=wandb.config,
-        name=log_name,
-        dir=str(Path.cwd().parent.parent),
-        save_code=True,
-        sync_tensorboard=sync_tensorboard,
-        monitor_gym=monitor_gym,
-        resume="allow",
-        id=config.wandb.run_id,
-        tags=tags,
-    )
-    model_dir = Path(run.dir) / "checkpoints"
-    model_dir.mkdir(parents=True, exist_ok=True)
 
 
 # https://discuss.pytorch.org/t/moving-optimizer-from-cpu-to-gpu/96068/3
@@ -304,48 +281,4 @@ def obs_to_tensor(obs, device):
         return torch.Tensor(obs.transpose(0, 3, 1, 2)).to(device) / 255.0
     else:
         return torch.Tensor(obs).to(device)
-
-
-class Dinosaur(torch.nn.Module):
-    def __init__(self, dino_model_name, n_slots, slot_dim, intput_feature_dim, num_patches, features, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._dino_model_name = dino_model_name
-        self._n_slots = n_slots
-        self._slot_dim = slot_dim
-        self._input_feature_dim = intput_feature_dim
-        self._num_patches = num_patches
-        self._features = features
-        self._normalization = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-
-        self.feature_extractor = TimmFeatureExtractor(model_name=self._dino_model_name, feature_level=12,
-                                                      pretrained=True, freeze=True)
-        self.conditioning = RandomConditioning(object_dim=self._slot_dim, n_slots=self._n_slots, learn_mean=True,
-                                               learn_std=True)
-
-        pos_embedding = Sequential(DummyPositionEmbed(),
-                                   build_two_layer_mlp(input_dim=self._input_feature_dim, output_dim=self._slot_dim,
-                                                       hidden_dim=self._input_feature_dim, initial_layer_norm=True))
-        ff_mlp = build_two_layer_mlp(input_dim=self._slot_dim, output_dim=self._slot_dim, hidden_dim=4 * self._slot_dim,
-                                     initial_layer_norm=True, residual=True)
-        self.perceptual_grouping = SlotAttentionGrouping(feature_dim=self._slot_dim, object_dim=self._slot_dim, ff_mlp=ff_mlp,
-                                                         positional_embedding=pos_embedding, use_projection_bias=False,
-                                                         use_implicit_differentiation=False,
-                                                         use_empty_slot_for_masked_slots=False)
-
-        decoder = partial(build_mlp, features=self._features)
-        self.object_decoder = PatchDecoder(object_dim=self._slot_dim, output_dim=self._input_feature_dim,
-                                           num_patches=self._num_patches, decoder=decoder,)
-
-    def forward(self, image, prev_slots=None):
-        image = self._normalization(image)
-        feature_extraction_output = self.feature_extractor(image)
-        conditioning_output = prev_slots
-        if conditioning_output is None:
-            conditioning_output = self.conditioning(feature_extraction_output.features.size()[0])
-
-        perceptual_grouping_output = self.perceptual_grouping(feature_extraction_output, conditioning_output)
-        # patch_reconstruction_output = self._patch_decoder(perceptual_grouping_output.objects,
-        #                                                   feature_extraction_output.features, image)
-
-        return perceptual_grouping_output.objects
 

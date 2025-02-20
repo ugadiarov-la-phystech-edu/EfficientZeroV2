@@ -41,6 +41,9 @@ def main(config):
         config.actors.batch_worker = 1
         config.data.num_envs = 1
 
+    if config.wandb.debug:
+        os.environ["WANDB_MODE"] = "disabled"
+
     if config.ddp.world_size > 1:
         mp.spawn(start_ddp_trainer, args=(config,), nprocs=config.ddp.world_size)
     else:
@@ -70,7 +73,6 @@ def start_ddp_trainer(rank, config):
                 project=config.wandb.project,
                 id=config.resume.wandb_id,
                 resume='allow'
-                # config=config,
             )
         else:
             logger = None

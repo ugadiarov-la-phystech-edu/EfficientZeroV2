@@ -24,12 +24,9 @@ class OCEZShapes2dAgent(Agent):
 
         self.state_norm = config.model.state_norm
         self.value_prefix = config.model.value_prefix
-        #self.action_embedding = config.model.action_embedding
-        #self.action_embedding_dim = config.model.action_embedding_dim
 
         self.slate_config = self.config.oc.ocr_config_path
         self.slate_weights = self.config.oc.checkpoint_path
-        self.slate_device = self.config.oc.device
         self.slot_dim = self.config.oc.slot_dim
         self.n_slots = self.config.oc.n_slots
         self.latent_dim = self.config.oc.latent_dim
@@ -79,25 +76,25 @@ class OCEZShapes2dAgent(Agent):
         self._update = True
 
     def build_model(self):
-        representation_model = OCRepresentationNetwork(self.slate_config, self.obs_shape[2], self.slate_weights, self.slate_device)
+        representation_model = OCRepresentationNetwork(self.slate_config, self.obs_shape[2], self.slate_weights)
 
         dynamics_model = OCDynamicsNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots)
 
-        value_policy_model = OCValuePolicyNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots,
+        value_policy_model = OCValuePolicyNetwork(self.slot_dim, self.latent_dim, self.n_slots,
                                                   self.config.model.value_support.size, self.action_space_size)
 
         reward_output_size = self.config.model.reward_support.size
         if self.value_prefix:
-            reward_prediction_model = OCSupportLSTMNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots,
+            reward_prediction_model = OCSupportLSTMNetwork(self.slot_dim, self.latent_dim, self.n_slots,
                                                            reward_output_size, self.config.model.lstm_hidden_size)
         else:
-            reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots, reward_output_size)
+            reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.n_slots, reward_output_size)
 
         projection_layers = self.config.model.projection_layers
         head_layers = self.config.model.prjection_head_layers
         assert projection_layers[1] == head_layers[1]
 
-        projection_model = OCProjectionNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots, projection_layers[0], projection_layers[1])
+        projection_model = OCProjectionNetwork(self.slot_dim, self.latent_dim, self.n_slots, projection_layers[0], projection_layers[1])
         projection_head_model = ProjectionHeadNetwork(projection_layers[1], head_layers[0], head_layers[1])
 
         ez_model = EfficientZero(representation_model, dynamics_model, reward_prediction_model, value_policy_model,

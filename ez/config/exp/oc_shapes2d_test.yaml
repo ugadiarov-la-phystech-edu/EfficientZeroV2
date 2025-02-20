@@ -7,7 +7,7 @@ env:
   game: Navigation5x5-v0
   base_seed: 0
   n_skip: 0
-  n_stack: 4
+  n_stack: 1
   max_episode_steps: 100
   gray_scale: False
   image_based: True
@@ -112,8 +112,7 @@ mcts:
 oc:
   ocr_config_path: 'ocr/slate/config/navigation5x5.yaml'
   checkpoint_path: 'navigation5x5/model_best_new.pth'
-  device: 'cuda'
-  n_slots: 5
+  n_slots: 6
   slot_dim: 64
   latent_dim: 512
 
@@ -163,3 +162,4 @@ actors:
 wandb:
   project: 'ez-v2-release'
   tag: 'Shapes2d'
+  debug: True
