@@ -104,7 +104,7 @@ class RepresentationNetwork(nn.Module):
         return x
 
 class OCRepresentationNetwork(nn.Module):
-    def __init__(self, ocr_config_path, obs_size, checkpoint_path):
+    def __init__(self, ocr_config_path, obs_size, checkpoint_path,  slot_dim, latent_dim, n_slots):
         super().__init__()
         self.ocr_config_path = ocr_config_path
         self.obs_size = obs_size
@@ -150,6 +150,8 @@ class DynamicsNetwork(nn.Module):
         )
 
     def forward(self, state, action):
+        print(f'dynamics x = {state.shape}')
+        print(f'dynamics action = {action.shape}')
         # encode action
         if not self.is_continuous:
             action_place = torch.ones((
@@ -194,6 +196,8 @@ class OCDynamicsNetwork(nn.Module):
                               action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
                               copy_action=True, edge_actions=True)
     def forward(self, slots, action):
+        print(f'dynamics x = {slots.shape}')
+        print(f'dynamics action = {action.shape}')
         return self.gnn(slots, action)
 
 class ValuePolicyNetwork(nn.Module):
@@ -220,6 +224,7 @@ class ValuePolicyNetwork(nn.Module):
         self.min_std = 0.1
 
     def forward(self, x):
+        print(f'value policy x = {x.shape}')
         for block in self.resblocks:
             x = block(x)
 
@@ -262,7 +267,7 @@ class OCValuePolicyNetwork(nn.Module):
         self.act = nn.ReLU(inplace=True)
 
     def forward(self, slots):
-
+        print(f'value policy x = {slots.shape}')
         x = self.gnn_policy(slots, action=None)
         x = self.act(x)
         policy = self.mlp_policy(x.mean(dim=1))
@@ -321,6 +326,8 @@ class SupportLSTMNetwork(nn.Module):
         self.fc = mlp(lstm_hidden_size, fc_layers, output_support_size, init_zero=init_zero)
 
     def forward(self, x, hidden):
+        print(f'support network x = {x.shape}')
+        print(f'support network hid = {hidden[0].shape}')
         x = self.conv1x1_reward(x)
         x = self.bn_reward(x)
         x = nn.functional.relu(x)
@@ -333,7 +340,7 @@ class SupportLSTMNetwork(nn.Module):
         return x, hidden
 
 class OCSupportLSTMNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, action_space_size, n_slots, output_support_size, lstm_hidden_size):
+    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, lstm_hidden_size):
         super().__init__()
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
@@ -346,6 +353,8 @@ class OCSupportLSTMNetwork(nn.Module):
 
     def forward(self, slots, hidden):
         x = self.gnn(slots, action=None)
+        print(f'support network x = {x.shape}')
+        print(f'support network hid = {hidden[0].shape}')
         x = self.act(x)
         x, hidden = self.lstm(x.mean(dim=1), hidden)
         x = self.mlp(x)
