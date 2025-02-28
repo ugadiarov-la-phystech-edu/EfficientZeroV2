@@ -523,7 +523,6 @@ class CyMCTS(MCTS):
             reward_hidden_c_pool.append(reward_hidden[0])
             reward_hidden_h_pool.append(reward_hidden[1])
             hidden_state_index_x += 1
-
             # expand the leaf node and backward for statistics update
             tree.batch_back_propagate(hidden_state_index_x, next_value_prefixes.squeeze(-1).tolist(), next_values.squeeze(-1).tolist(), next_logits.tolist(), value_min_max_lst, results, to_reset_lst, self.num_actions)
 

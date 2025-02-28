@@ -192,7 +192,7 @@ class GNN(torch.nn.Module):
         return self.edge_list
 
     def process_action_(self, action):
-        action = action.squeeze(0)
+        action = action.squeeze(0) #?????
         if self.copy_action:
             if len(action.shape) == 1:
                 # action is an integer
@@ -201,7 +201,13 @@ class GNN(torch.nn.Module):
                 # action is a vector
                 action_vec = action.repeat(1, self.num_objects)
             # mix node and batch dimension
-            action_vec = action_vec.reshape(-1, self.action_dim).float()
+            try:
+                action_vec = action_vec.reshape(-1, self.action_dim).float()
+            except Exception as e:
+                import ipdb
+                print("Произошло исключение:", e)
+                ipdb.set_trace()
+            #action_vec = action_vec.reshape(-1, self.action_dim).float()
         else:
             # we have a separate action for each node
             if len(action.shape) == 1:

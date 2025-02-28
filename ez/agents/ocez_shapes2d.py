@@ -81,7 +81,7 @@ class OCEZShapes2dAgent(Agent):
         dynamics_model = OCDynamicsNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots)
 
         value_policy_model = OCValuePolicyNetwork(self.slot_dim, self.latent_dim, self.n_slots,
-                                                  self.config.model.value_support.size, self.action_space_size)
+                                                  self.config.model.value_support.size, self.action_space_size, v_num=self.config.train.v_num)
 
         reward_output_size = self.config.model.reward_support.size
         if self.value_prefix:
