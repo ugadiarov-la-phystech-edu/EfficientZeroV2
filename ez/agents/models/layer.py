@@ -204,8 +204,9 @@ class GNN(torch.nn.Module):
             action_vec = action_vec.reshape(-1, self.action_dim).float()
         else:
             # we have a separate action for each node
-            if len(action.shape) == 1:
+            if action.shape[1] == 1:
                 # index for both object and action
+                action = action.squeeze(1)
                 action_vec = to_one_hot(action, self.action_dim * self.num_objects)
                 action_vec = action_vec.reshape(-1, self.action_dim)
             else:
