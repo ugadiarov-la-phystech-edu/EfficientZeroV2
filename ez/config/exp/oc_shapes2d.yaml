@@ -7,12 +7,12 @@ env:
   game: Navigation5x5-v0
   base_seed: 0
   n_skip: 0
-  n_stack: 4
+  n_stack: 1
   max_episode_steps: 100
   gray_scale: False
   image_based: True
   clip_reward: True
-  obs_shape: [3, 96, 96]
+  obs_shape: [3, 64, 64]
   episodic: True
 
 rl:
@@ -86,7 +86,7 @@ train:
 # self-play data collection
 data:
   num_envs: 4
-  buffer_size: 1000000      # 1 * 1000 * 1000
+  buffer_size: 1000000     # 1 * 1000 * 1000
   total_transitions: 100000 # 100 * 1000
   top_transitions: 2e5
   trajectory_size: 400
@@ -109,8 +109,12 @@ mcts:
   mpc_horizon: 1
   use_gumbel: True
 
-object-centric:
+oc:
   ocr_config_path: 'ocr/slate/config/navigation5x5.yaml'
+  checkpoint_path: 'navigation5x5/model_best_new.pth'
+  n_slots: 6
+  slot_dim: 64
+  latent_dim: 512
 
 
 # model architecture
@@ -157,4 +161,5 @@ actors:
 # wandb
 wandb:
   project: 'ez-v2-release'
-  tag: 'Shapes2d'
+  tag: 'OCShapes2d'
+  debug: True

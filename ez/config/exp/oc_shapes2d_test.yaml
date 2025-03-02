@@ -96,7 +96,7 @@ data:
 # MCTS
 mcts:
   language: cython
-  num_simulations: 16   # prev 8, ori_mcts 50
+  num_simulations: 2   # prev 8, ori_mcts 50
   num_top_actions: 4  # prev 4
   c_visit: 50
   c_scale: 0.1    # prev 0.1
@@ -161,5 +161,5 @@ actors:
 # wandb
 wandb:
   project: 'ez-v2-release'
-  tag: 'Shapes2d'
+  tag: 'OCShapes2d'
   debug: True

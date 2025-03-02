@@ -22,6 +22,9 @@ def cosine_similarity_loss(f1, f2):
     f2 = F.normalize(f2, p=2., dim=-1, eps=1e-5)
     return -(f1 * f2).sum(dim=1)
 
+def mse_loss(prediction, target):
+    return nn.MSELoss(reduction='none')(input, target).mean(dim=1)
+
 
 def kl_loss(prediction, target):
     return -(torch.log_softmax(prediction, dim=-1) * target).sum(-1)

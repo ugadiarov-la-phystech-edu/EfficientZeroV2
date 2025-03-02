@@ -7,8 +7,8 @@ env:
   game: Navigation5x5-v0
   base_seed: 0
   n_skip: 0
-  n_stack: 4
-  max_episode_steps: 10
+  n_stack: 1
+  max_episode_steps: 100
   gray_scale: False
   image_based: True
   clip_reward: True
@@ -54,7 +54,7 @@ train:
 
   self_play_update_interval: 5
   reanalyze_update_interval: 5
-  save_ckpt_interval: 10000
+  save_ckpt_interval: 20
 
   mini_batch_size: 2
   reanalyze_ratio: 1.0
