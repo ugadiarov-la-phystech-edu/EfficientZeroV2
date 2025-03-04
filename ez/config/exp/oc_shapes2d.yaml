@@ -111,7 +111,7 @@ mcts:
 
 oc:
   ocr_config_path: 'ocr/slate/config/navigation5x5.yaml'
-  checkpoint_path: 'navigation5x5/model_best_new.pth'
+  checkpoint_path: 'ez/navigation5x5/model_best_new.pth'
   n_slots: 6
   slot_dim: 64
   latent_dim: 512
@@ -162,4 +162,4 @@ actors:
 wandb:
   project: 'ez-v2-release'
   tag: 'OCShapes2d'
-  debug: True
+  debug: False
