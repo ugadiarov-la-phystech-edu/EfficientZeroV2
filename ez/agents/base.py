@@ -510,14 +510,14 @@ class Agent:
 
                 beg_index = image_channel * step_i
                 end_index = image_channel * (step_i + n_stack)
-
-                # consistency loss
                 gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index])
                 # projection for consistency
                 dynamic_states_proj = model.do_projection(states, with_grad=True)
                 gt_states_proj = model.do_projection(gt_next_states, with_grad=False)
-                consistency_loss += cosine_similarity_loss(dynamic_states_proj, gt_states_proj) * mask
-                #consistency_loss += mse_loss(dynamic_states_proj, gt_states_proj) * mask
+                if self.config.train.consistency_loss == 'mse':
+                    consistency_loss += mse_loss(dynamic_states_proj, gt_states_proj) * mask
+                else:
+                    consistency_loss += cosine_similarity_loss(dynamic_states_proj, gt_states_proj) * mask
   
                 # reward, value, policy loss
                 if self.config.model.reward_support.type == 'symlog':
@@ -723,9 +723,9 @@ def train_ddp(agent, rank, replay_buffer, storage, batch_storage, logger):
         logger = wandb.init(
             name=wandb_name,
             project=agent.config.wandb.project,
-            id=agent.resume.wandb_id,
-            resume='allow'
-            # config=config,
+            id=agent.config.resume.wandb_id,
+            resume='allow',
+            config=agent.config
         )
     assert agent._update
     # update image augmentation transform

@@ -59,6 +59,7 @@ train:
   mini_batch_size: 2
   reanalyze_ratio: 1.0
 
+  consistency_loss: 'cosine'
   reward_loss_coeff: 1.0
   value_loss_coeff: 0.5  # prev 0.25, 1.5 for test model-free value fitting
   policy_loss_coeff: 1.0   # prev 1.0

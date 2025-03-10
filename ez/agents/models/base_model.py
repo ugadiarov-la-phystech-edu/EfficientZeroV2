@@ -266,13 +266,13 @@ class OCValuePolicyNetwork(nn.Module):
         #TODO is continuous
         x = self.gnn_policy(slots, action=None)
         x = self.act(x)
-        policy = self.mlp_policy(x.mean(dim=1))
+        policy = self.mlp_policy(x.sum(dim=1))
 
         values = []
         for i in range(self.v_num):
             x = self.gnn_values[i](slots, action=None)
             x = self.act(x)
-            value = self.mlp_values[i](x.mean(dim=1))
+            value = self.mlp_values[i](x.sum(dim=1))
             values.append(value)
 
         return torch.stack(values), policy
@@ -309,7 +309,7 @@ class OCSupportNetwork(nn.Module):
     def forward(self, slots):
         x = self.gnn(slots, action=None)
         x = self.act(x)
-        reward = self.mlp(x.mean(dim=1))
+        reward = self.mlp(x.sum(dim=1))
         return reward
 
 
@@ -351,11 +351,33 @@ class OCSupportLSTMNetwork(nn.Module):
     def forward(self, slots, hidden):
         x = self.gnn(slots, action=None)
         x = self.act(x)
-        x = x.mean(dim=1).unsqueeze(0)
+        x = x.sum(dim=1).unsqueeze(0)
         x, hidden = self.lstm(x, hidden)
         x = x.squeeze(0)
         x = self.mlp(x)
         return x, hidden
+
+#TODO do GRUGNN
+class OCSupportGRUGNN(nn.Module):
+    def __init__(self, slot_dim, latent_dim, n_slots, act=torch.tanh, update_bias=-1):
+        super(OCSupportGRUGNN, self).__init__()
+        self.slot_dim = slot_dim
+        self.latent_dim = latent_dim
+        self.n_slots = n_slots
+        self._act = act
+        self._update_bias = update_bias
+        self._gnn = GNN(self.slot_dim + self.latent_dim, hidden_dim=self.latent_dim, action_dim=0, num_objects=self.n_slots,
+                        ignore_action=True, copy_action=False, edge_actions=False, output_dim=3 * (self.slot_dim + self.latent_dim))
+
+    def forward(self, hidden, slots):
+        full_state = torch.cat([slots, hidden], dim=-1)
+        parts = self._gnn(full_state, None)[0]
+        reset, cand, update = torch.split(parts, [self._deterministic_dim] * 3, dim=-1)
+        reset = torch.sigmoid(reset)
+        cand = self._act(reset * cand)
+        update = torch.sigmoid(update + self._update_bias)
+        output = update * cand + (1 - update) * slots
+        return output, [output]
 
 
 class ProjectionNetwork(nn.Module):
@@ -381,8 +403,7 @@ class ProjectionNetwork(nn.Module):
         return self.layer(x)
 
 class OCProjectionNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, hid_dim, out_dim):
-        super().__init__()
+    def __init__(self, slot_dim, latent_dim, n_slots):
         super().__init__()
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
@@ -390,23 +411,10 @@ class OCProjectionNetwork(nn.Module):
         self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
                               num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
         self.act = nn.ReLU(inplace=True)
-        self.layer = nn.Sequential(
-            nn.Linear(self.slot_dim, hid_dim),
-            nn.BatchNorm1d(hid_dim),
-            nn.ReLU(),
-
-            nn.Linear(hid_dim, hid_dim),
-            nn.BatchNorm1d(hid_dim),
-            nn.ReLU(),
-
-            nn.Linear(hid_dim, out_dim),
-            nn.BatchNorm1d(out_dim)
-        )
 
     def forward(self, slots):
         x = self.gnn(slots, action=None)
         x = self.act(x)
-        x = self.layer(x.mean(dim=1))
         return x
 
 class ProjectionHeadNetwork(nn.Module):
@@ -422,3 +430,18 @@ class ProjectionHeadNetwork(nn.Module):
 
     def forward(self, x):
         return self.layer(x)
+
+class OCProjectionHeadNetwork(nn.Module):
+    def __init__(self, slot_dim, latent_dim, n_slots):
+        super().__init__()
+        self.slot_dim = slot_dim
+        self.latent_dim = latent_dim
+        self.n_slots = n_slots
+        self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
+                              num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
+        self.act = nn.ReLU(inplace=True)
+
+    def forward(self, slots):
+        x = self.gnn(slots, action=None)
+        x = self.act(x)
+        return x

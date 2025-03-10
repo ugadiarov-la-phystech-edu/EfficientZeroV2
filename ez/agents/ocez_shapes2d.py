@@ -90,12 +90,8 @@ class OCEZShapes2dAgent(Agent):
         else:
             reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.n_slots, reward_output_size)
 
-        projection_layers = self.config.model.projection_layers
-        head_layers = self.config.model.prjection_head_layers
-        assert projection_layers[1] == head_layers[1]
-
-        projection_model = OCProjectionNetwork(self.slot_dim, self.latent_dim, self.n_slots, projection_layers[0], projection_layers[1])
-        projection_head_model = ProjectionHeadNetwork(projection_layers[1], head_layers[0], head_layers[1])
+        projection_model = OCProjectionNetwork(self.slot_dim, self.latent_dim, self.n_slots)
+        projection_head_model = OCProjectionHeadNetwork(self.slot_dim, self.latent_dim, self.n_slots)
 
         ez_model = EfficientZero(representation_model, dynamics_model, reward_prediction_model, value_policy_model,
                                  projection_model, projection_head_model, self.config,

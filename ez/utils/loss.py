@@ -20,10 +20,21 @@ def cosine_similarity_loss(f1, f2):
     """
     f1 = F.normalize(f1, p=2., dim=-1, eps=1e-5)
     f2 = F.normalize(f2, p=2., dim=-1, eps=1e-5)
-    return -(f1 * f2).sum(dim=1)
+    cosine_sim = (f1 * f2).sum(dim=1)
+    return -cosine_sim.mean(dim=1)
+
+# def cosine_similarity_loss(f1, f2):
+#     """Cosine Consistency loss function: similarity loss
+#     Parameters
+#     """
+#     f1 = F.normalize(f1, p=2., dim=-1, eps=1e-5)
+#     f2 = F.normalize(f2, p=2., dim=-1, eps=1e-5)
+#     return -(f1 * f2).sum(dim=1)
 
 def mse_loss(prediction, target):
-    return nn.MSELoss(reduction='none')(input, target).mean(dim=1)
+    squared_error = (prediction - target).pow(2)
+    mse_per_object = squared_error.mean(dim=-1)
+    return mse_per_object.mean(dim=1)
 
 
 def kl_loss(prediction, target):

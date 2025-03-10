@@ -102,7 +102,7 @@ def conv3x3(in_channels, out_channels, stride=1):
         in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False
     )
 
-class GNN(torch.nn.Module):
+class GNN(nn.Module):
 
     def __init__(self, input_dim, hidden_dim, action_dim, num_objects, ignore_action=False, copy_action=False,
                  act_fn='relu', layer_norm=True, num_layers=3, use_interactions=True, edge_actions=False,
