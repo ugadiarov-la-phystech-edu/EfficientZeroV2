@@ -357,7 +357,7 @@ class OCSupportLSTMNetwork(nn.Module):
         x = self.mlp(x)
         return x, hidden
 
-#TODO do GRUGNN
+#TODO do GRUGNN ?
 class OCSupportGRUGNN(nn.Module):
     def __init__(self, slot_dim, latent_dim, n_slots, act=torch.tanh, update_bias=-1):
         super(OCSupportGRUGNN, self).__init__()

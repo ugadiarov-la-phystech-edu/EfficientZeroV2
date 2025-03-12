@@ -193,7 +193,7 @@ class GNN(nn.Module):
 
     def process_action_(self, action):
         if self.copy_action:
-            if action.shape[1] == 1:
+            if action.shape[1] == 1 and (action.dtype in (torch.int32, torch.int64)):
                 # action is an integer
                 action = action.squeeze(1)
                 action_vec = to_one_hot(action, self.action_dim).repeat(1, self.num_objects)
@@ -204,7 +204,7 @@ class GNN(nn.Module):
             action_vec = action_vec.reshape(-1, self.action_dim).float()
         else:
             # we have a separate action for each node
-            if action.shape[1] == 1:
+            if action.shape[1] == 1 and (action.dtype in (torch.int32, torch.int64)):
                 # index for both object and action
                 action = action.squeeze(1)
                 action_vec = to_one_hot(action, self.action_dim * self.num_objects)
