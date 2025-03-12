@@ -724,8 +724,8 @@ def train_ddp(agent, rank, replay_buffer, storage, batch_storage, logger):
             name=wandb_name,
             project=agent.config.wandb.project,
             id=agent.resume.wandb_id,
-            resume='allow'
-            # config=config,
+            resume='allow',
+            config=agent.config,
         )
     assert agent._update
     # update image augmentation transform

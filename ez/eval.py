@@ -74,6 +74,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
         video_path = None
 
     dones = np.array([False for _ in range(n_episodes)])
+    success_rate = 0
     if use_pb:
         pb = tqdm(np.arange(max_steps), leave=True)
     ep_ori_rewards = np.zeros(n_episodes)
@@ -143,6 +144,9 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             # rewards[i].append(reward)
             rewards[i].append(info['raw_reward'])
             dones[i] = done
+            if info['is_success']:
+                success_rate+=1
+
 
             # save data to trajectory buffer
             game_trajs[i].store_search_results(values[i], r_values[i], r_policies[i])
@@ -166,6 +170,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
                                ''.format(config.env.game, step, best_actions,
                                          ep_ori_rewards.mean(), ep_ori_rewards.max(), ep_ori_rewards.min()))
             pb.update(1)
+    success_rate /= n_episodes
 
     [env.close() for env in envs]
     for i in range(n_episodes):
@@ -186,7 +191,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             j += 1
         writer.close()
 
-    return ep_ori_rewards
+    return ep_ori_rewards, success_rate
 
 
 
