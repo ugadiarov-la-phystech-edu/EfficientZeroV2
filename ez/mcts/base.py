@@ -5,7 +5,6 @@
 
 import copy
 import torch
-from torch.cuda.amp import autocast as autocast
 from ez.utils.format import DiscreteSupport
 import numpy as np
 
@@ -72,9 +71,8 @@ class MCTS:
             next_value_prefixes = 0
             for _ in range(self.mpc_horizon):
                 with torch.no_grad():
-                    with autocast():
-                        states, pred_value_prefixes, next_values, next_logits, reward_hidden = \
-                            model.recurrent_inference(states, last_actions, reward_hidden)
+                    states, pred_value_prefixes, next_values, next_logits, reward_hidden = \
+                        model.recurrent_inference(states, last_actions, reward_hidden)
                 # last_actions = self.sample_mpc_actions(next_logits)
                 next_value_prefixes += pred_value_prefixes
 
@@ -106,8 +104,7 @@ class MCTS:
         for i in range(actions.shape[0]):
             current_states_hidden = None
             with torch.no_grad():
-                with autocast():
-                    next_states, next_value_prefixes, next_values, next_logits, reward_hidden = model.recurrent_inference(current_states, actions[i], reward_hidden)
+                next_states, next_value_prefixes, next_values, next_logits, reward_hidden = model.recurrent_inference(current_states, actions[i], reward_hidden)
 
             next_value_prefixes = next_value_prefixes.detach()
             next_values = next_values.detach()

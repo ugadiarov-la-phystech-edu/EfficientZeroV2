@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from ez.utils.distribution import SquashedNormal, TruncatedNormal, ContDist
 from ez.utils.format import atanh
 from ez.utils.format import symlog, symexp, DiscreteSupport
-from torch.cuda.amp import autocast as autocast
 
 
 

@@ -12,7 +12,6 @@ import numpy as np
 
 from torch.nn import L1Loss
 from pathlib import Path
-from torch.cuda.amp import autocast as autocast
 
 from ez.worker.base import Worker
 from ez import mcts
@@ -104,8 +103,7 @@ class DataWorker(Worker):
             # stack obs
             current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
             # obtain the statistics at current steps
-            with autocast():
-                states, values, policies = self.model.initial_inference(current_stacked_obs)
+            states, values, policies = self.model.initial_inference(current_stacked_obs)
 
             # process outputs
             values = values.detach().cpu().numpy().flatten()

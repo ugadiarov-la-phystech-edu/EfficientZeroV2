@@ -24,8 +24,6 @@ from pathlib import Path
 from PIL.ImageFont import load_path
 from tqdm.auto import tqdm
 from torch.nn import L1Loss
-from torch.cuda.amp import autocast as autocast
-from torch.cuda.amp import GradScaler as GradScaler
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from ez.utils.format import get_ddp_model_weights, DiscreteSupport, symexp
@@ -141,10 +139,6 @@ class Agent:
                 scheduler.load_state_dict(torch.load(scheduler_path))
 
 
-        scaler = GradScaler()
-        if os.path.exists(load_path):
-            scaler_path = os.path.join(load_path, 'scaler.p')
-            scaler.load_state_dict(torch.load(scaler_path))
 
         # wait until collecting enough data to start
         while not (ray.get(replay_buffer.get_transition_num.remote()) >= self.config.train.start_transitions):
@@ -213,8 +207,7 @@ class Agent:
                     time.sleep(1)
                     continue
 
-            scalers, log_data = self.update_weights(model, batch, optimizer, replay_buffer, scaler, step_count, target_model=target_model)
-            scaler = scalers[0]
+            log_data = self.update_weights(model, batch, optimizer, replay_buffer, step_count, target_model=target_model)
 
 
             loss_data, other_scalar, other_distribution = log_data
@@ -230,9 +223,6 @@ class Agent:
 
                 cur_optim_path = model_path / 'optimizer.p'
                 torch.save(optimizer.state_dict(), cur_optim_path)
-
-                cur_scaler_path = model_path / 'scaler.p'
-                torch.save(scaler.state_dict(), cur_scaler_path)
 
                 if scheduler is not None:
                     cur_scheduler_path = model_path / 'scheduler.p'
@@ -380,7 +370,7 @@ class Agent:
         return model
 
     # @profile
-    def update_weights(self, model, batch, optimizer, replay_buffer, scaler, step_count, target_model=None):
+    def update_weights(self, model, batch, optimizer, replay_buffer, step_count, target_model=None):
         target_model.eval()
         # init
         batch_size = self.config.train.batch_size
@@ -443,8 +433,7 @@ class Agent:
         # transform value and reward to support
         target_value_prefixes_support = DiscreteSupport.scalar_to_vector(target_value_prefixes, **self.config.model.reward_support)
 
-        with autocast():
-            states, values, policies = model.initial_inference(obs_batch, training=True)
+        states, values, policies = model.initial_inference(obs_batch, training=True)
 
         if self.config.model.value_support.type == 'symlog':
             scaled_value = symexp(values).min(0)[0]
@@ -503,49 +492,48 @@ class Agent:
 
         prev_value_prefixes = torch.zeros_like(policy_loss)
         # unroll k steps recurrently
-        with autocast():
-            for step_i in range(unroll_steps):
-                mask = mask_batch[:, step_i]
-                states, value_prefixes, values, policies, reward_hidden = model.recurrent_inference(states, action_batch[:, step_i], reward_hidden, training=True)
+        for step_i in range(unroll_steps):
+            mask = mask_batch[:, step_i]
+            states, value_prefixes, values, policies, reward_hidden = model.recurrent_inference(states, action_batch[:, step_i], reward_hidden, training=True)
 
-                beg_index = image_channel * step_i
-                end_index = image_channel * (step_i + n_stack)
-                gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index])
-                # projection for consistency
-                dynamic_states_proj = model.do_projection(states, with_grad=True)
-                gt_states_proj = model.do_projection(gt_next_states, with_grad=False)
-                if self.config.train.consistency_loss == 'mse':
-                    consistency_loss += mse_loss(dynamic_states_proj, gt_states_proj) * mask
-                else:
-                    consistency_loss += cosine_similarity_loss(dynamic_states_proj, gt_states_proj) * mask
-  
-                # reward, value, policy loss
-                if self.config.model.reward_support.type == 'symlog':
-                    value_prefix_loss += symlog_loss(value_prefixes, target_value_prefixes[:, step_i]) * mask
-                else:
-                    value_prefix_loss += kl_loss(value_prefixes, target_value_prefixes_support[:, step_i]) * mask
+            beg_index = image_channel * step_i
+            end_index = image_channel * (step_i + n_stack)
+            gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index])
+            # projection for consistency
+            dynamic_states_proj = model.do_projection(states, with_grad=True)
+            gt_states_proj = model.do_projection(gt_next_states, with_grad=False)
+            if self.config.train.consistency_loss == 'mse':
+                consistency_loss += mse_loss(dynamic_states_proj, gt_states_proj) * mask
+            else:
+                consistency_loss += cosine_similarity_loss(dynamic_states_proj, gt_states_proj) * mask
 
-                value_loss += Value_loss(values, this_target_values[:, step_i + 1], self.config) * mask
+            # reward, value, policy loss
+            if self.config.model.reward_support.type == 'symlog':
+                value_prefix_loss += symlog_loss(value_prefixes, target_value_prefixes[:, step_i]) * mask
+            else:
+                value_prefix_loss += kl_loss(value_prefixes, target_value_prefixes_support[:, step_i]) * mask
 
-                if self.config.env.env in ['DMC', 'Gym']:
-                    policy_loss_i, entropy_loss_i = continuous_loss(
-                        policies, target_actions[:, step_i + 1], target_policies[:, step_i + 1],
-                        target_best_actions[:, step_i + 1],
-                        mask=mask,
-                        distribution_type=self.config.model.policy_distribution
-                    )
-                    policy_loss += policy_loss_i
-                    policy_entropy_loss -= entropy_loss_i
-                else:
-                    policy_loss_i = kl_loss(policies, target_policies[:, step_i + 1]) * mask
-                    policy_loss += policy_loss_i
+            value_loss += Value_loss(values, this_target_values[:, step_i + 1], self.config) * mask
 
-                # set half gradient due to two branches of states
-                states.register_hook(lambda grad: grad * 0.5)
+            if self.config.env.env in ['DMC', 'Gym']:
+                policy_loss_i, entropy_loss_i = continuous_loss(
+                    policies, target_actions[:, step_i + 1], target_policies[:, step_i + 1],
+                    target_best_actions[:, step_i + 1],
+                    mask=mask,
+                    distribution_type=self.config.model.policy_distribution
+                )
+                policy_loss += policy_loss_i
+                policy_entropy_loss -= entropy_loss_i
+            else:
+                policy_loss_i = kl_loss(policies, target_policies[:, step_i + 1]) * mask
+                policy_loss += policy_loss_i
 
-                # reset reward hidden
-                if self.config.model.value_prefix and (step_i + 1) % self.config.model.lstm_horizon_len == 0:
-                    reward_hidden = self.init_reward_hidden(batch_size)
+            # set half gradient due to two branches of states
+            states.register_hook(lambda grad: grad * 0.5)
+
+            # reset reward hidden
+            if self.config.model.value_prefix and (step_i + 1) % self.config.model.lstm_horizon_len == 0:
+                reward_hidden = self.init_reward_hidden(batch_size)
 
         # total loss
         loss = (value_prefix_loss * self.config.train.reward_loss_coeff
@@ -565,14 +553,11 @@ class Agent:
 
         # backward
         parameters = model.parameters()
-        with autocast():
-            weighted_loss.register_hook(lambda grad: grad * gradient_scale)
+        weighted_loss.register_hook(lambda grad: grad * gradient_scale)
         optimizer.zero_grad()
-        scaler.scale(weighted_loss).backward()
-        scaler.unscale_(optimizer)
+        weighted_loss.backward()
         torch.nn.utils.clip_grad_norm_(parameters, self.config.train.max_grad_norm)
-        scaler.step(optimizer)
-        scaler.update()
+        optimizer.step()
 
         if self.config.model.noisy_net:
             model.value_policy_model.reset_noise()
@@ -606,8 +591,7 @@ class Agent:
             'dist/target_policy': target_policies.detach().cpu().numpy().flatten(),
         })
 
-        scalers = [scaler]
-        return scalers, (loss_data, other_scalar, other_distribution)
+        return (loss_data, other_scalar, other_distribution)
 
     def get_weights(self, model):
         if self.use_ddp:
@@ -810,11 +794,6 @@ def train_ddp(agent, rank, replay_buffer, storage, batch_storage, logger):
             scheduler_path = os.path.join(load_path, 'scheduler.p')
             scheduler.load_state_dict(torch.load(scheduler_path))
 
-    scaler = GradScaler()
-    if os.path.exists(load_path):
-        scaler_path = os.path.join(load_path, 'scaler.p')
-        scaler.load_state_dict(torch.load(scaler_path))
-
 
     # wait until collecting enough data to start
     while not (ray.get(replay_buffer.get_transition_num.remote()) >= agent.config.train.start_transitions):
@@ -875,8 +854,7 @@ def train_ddp(agent, rank, replay_buffer, storage, batch_storage, logger):
             recent_weights = agent.get_weights(model)
 
 
-        scalers, log_data = agent.update_weights(model.module, batch, optimizer, replay_buffer, scaler, step_count, target_model=target_model)
-        scaler = scalers[0]
+        log_data = agent.update_weights(model.module, batch, optimizer, replay_buffer, step_count, target_model=target_model)
 
         loss_data, other_scalar, other_distribution = log_data
 
@@ -892,8 +870,6 @@ def train_ddp(agent, rank, replay_buffer, storage, batch_storage, logger):
             cur_optim_path = model_path / 'optimizer.p'
             torch.save(optimizer.state_dict(), cur_optim_path)
 
-            cur_scaler_path = model_path / 'scaler.p'
-            torch.save(scaler.state_dict(), cur_scaler_path)
 
             if scheduler is not None:
                 cur_scheduler_path = model_path / 'scheduler.p'

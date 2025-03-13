@@ -14,7 +14,6 @@ from PIL import Image, ImageDraw
 from pathlib import Path
 import numpy as np
 
-from torch.cuda.amp import autocast as autocast
 import torch.nn.functional as F
 
 from .base import Worker
@@ -923,11 +922,10 @@ class BatchWorker(Worker):
                     actions = policies[:, :policies.shape[-1]//2]
                 actions = actions.unsqueeze(1)
 
-            with autocast():
-                states, value_prefixes, values, policies, reward_hidden = \
-                    self.model.recurrent_inference(states, actions, reward_hidden)
-                values = values.squeeze().detach().cpu().numpy()
-                value_lst.append(values)
+            states, value_prefixes, values, policies, reward_hidden = \
+                self.model.recurrent_inference(states, actions, reward_hidden)
+            values = values.squeeze().detach().cpu().numpy()
+            value_lst.append(values)
             if self.value_prefix and (i + 1) % self.lstm_horizon_len == 0:
                 reward_hidden = (torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda(),
                                  torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda())
@@ -984,8 +982,7 @@ class BatchWorker(Worker):
                 current_obs = obs_lst[beg_index:end_index]
                 current_obs = formalize_obs_lst(current_obs, self.image_based)
                 # obtain the statistics at current steps
-                with autocast():
-                    states, values, policies = self.model.initial_inference(current_obs)
+                states, values, policies = self.model.initial_inference(current_obs)
 
                 # process outputs
                 values = values.detach().cpu().numpy().flatten()

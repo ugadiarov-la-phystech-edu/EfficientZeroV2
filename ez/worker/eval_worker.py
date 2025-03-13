@@ -11,7 +11,6 @@ import logging
 import numpy as np
 
 from pathlib import Path
-from torch.cuda.amp import autocast as autocast
 
 from .base import Worker
 from ez import mcts

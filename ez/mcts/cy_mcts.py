@@ -16,7 +16,6 @@ from .base import MCTS
 from ez.mcts.ctree import cytree as tree
 from ez.mcts.ori_ctree import cytree as ori_tree
 from ez.mcts.ctree_v2 import cytree as tree2
-from torch.cuda.amp import autocast as autocast
 from ez.utils.format import DiscreteSupport, symexp, pad_and_mask
 from ez.utils.distribution import SquashedNormal, TruncatedNormal, ContDist
 import colorednoise as cn
@@ -614,9 +613,8 @@ class Gumbel_MCTS(object):
             reward_hidden = kwargs.get('reward_hidden')
 
             with torch.no_grad():
-                with autocast():
-                    next_states, next_value_prefixes, next_values, next_logits, reward_hidden = \
-                        model.recurrent_inference(current_states, last_actions, reward_hidden)
+                next_states, next_value_prefixes, next_values, next_logits, reward_hidden = \
+                    model.recurrent_inference(current_states, last_actions, reward_hidden)
 
             # process outputs
             next_values = next_values.detach().cpu().numpy().flatten()

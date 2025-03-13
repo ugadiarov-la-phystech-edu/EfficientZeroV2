@@ -21,7 +21,6 @@ from PIL import Image, ImageDraw
 from pathlib import Path
 from tqdm.auto import tqdm
 from omegaconf import OmegaConf
-from torch.cuda.amp import autocast as autocast
 import torch.nn.functional as F
 from ez import mcts
 from ez import agents
@@ -105,8 +104,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
         current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
         # obtain the statistics at current steps
         with torch.no_grad():
-            with autocast():
-                states, values, policies = model.initial_inference(current_stacked_obs)
+            states, values, policies = model.initial_inference(current_stacked_obs)
 
         values = values.detach().cpu().numpy().flatten()
 
