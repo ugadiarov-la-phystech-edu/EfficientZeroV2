@@ -7,6 +7,8 @@ import torch
 import math
 import torch.nn as nn
 import numpy as np
+from numpy.ma.core import shape
+
 from .layer import ResidualBlock, GNN, conv3x3, mlp
 from omegaconf import OmegaConf
 from collections import namedtuple
@@ -357,27 +359,32 @@ class OCSupportLSTMNetwork(nn.Module):
         x = self.mlp(x)
         return x, hidden
 
-#TODO do GRUGNN ?
 class OCSupportGRUGNN(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, act=torch.tanh, update_bias=-1):
+    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, update_bias=-1):
         super(OCSupportGRUGNN, self).__init__()
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
         self.n_slots = n_slots
-        self._act = act
-        self._update_bias = update_bias
-        self._gnn = GNN(self.slot_dim + self.latent_dim, hidden_dim=self.latent_dim, action_dim=0, num_objects=self.n_slots,
-                        ignore_action=True, copy_action=False, edge_actions=False, output_dim=3 * (self.slot_dim + self.latent_dim))
+        self.act = nn.Tanh()
+        self.update_bias = update_bias
+        self.gnn = GNN(self.slot_dim + self.latent_dim, hidden_dim=self.latent_dim, action_dim=0, num_objects=self.n_slots,
+                        ignore_action=True, copy_action=False, edge_actions=False, output_dim=3 * self.slot_dim)
+        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
 
-    def forward(self, hidden, slots):
+    def forward(self, slots, hidden):
+        print(f'slots shape {slots.shape}')
+        hidden = hidden.squeeze(0)
+        print(f'hidden shape {hidden.shape}')
         full_state = torch.cat([slots, hidden], dim=-1)
-        parts = self._gnn(full_state, None)[0]
-        reset, cand, update = torch.split(parts, [self._deterministic_dim] * 3, dim=-1)
+        parts = self.gnn(full_state, None)[0]
+        reset, cand, update = torch.split(parts, [self.slot_dim] * 3, dim=-1)
         reset = torch.sigmoid(reset)
-        cand = self._act(reset * cand)
-        update = torch.sigmoid(update + self._update_bias)
-        output = update * cand + (1 - update) * slots
-        return output, [output]
+        cand = self.act(reset * cand)
+        update = torch.sigmoid(update + self.update_bias)
+        hidden = update * cand + (1 - update) * slots
+        output = self.mlp(hidden)
+        print(f'output shape {output.shape}')
+        return output, hidden
 
 
 class ProjectionNetwork(nn.Module):

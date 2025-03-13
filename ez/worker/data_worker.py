@@ -127,6 +127,7 @@ class DataWorker(Worker):
                 env=config.env.env,
                 **config.mcts,  # pass mcts related params
                 **config.model,  # pass the value and reward support params
+                **config.oc,
             )
             if self.config.env.env == 'Atari' or self.config.env.env == 'Shapes2d':
                 if self.config.mcts.use_gumbel:

@@ -803,6 +803,7 @@ class BatchWorker(Worker):
             env=self.env,
             **self.config.mcts,  # pass mcts related params
             **self.config.model,  # pass the value and reward support params
+            **self.config.oc,
         )
         if self.env == 'Atari' or self.env == 'Shapes2d':
             if self.config.mcts.use_gumbel:
@@ -882,8 +883,8 @@ class BatchWorker(Worker):
         states = torch.cat([states for _ in range(times)], dim=0)
         values = np.concatenate([values for _ in range(times)], axis=0)
         policies = torch.cat([policies for _ in range(times)], dim=0)
-        reward_hidden = (torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda(),
-                         torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda())
+        reward_hidden = torch.zeros(1, len(states), self.config.oc.n_slots,
+                                    self.config.model.lstm_hidden_size).cuda()
         last_values_prefixes = np.zeros(len(states))
         reward_lst = []
         value_lst = []
@@ -894,7 +895,8 @@ class BatchWorker(Worker):
                     num_actions=self.config.env.action_space_size if (self.env == 'Atari'or self.env == 'Shapes2d') else self.config.mcts.num_top_actions,
                     discount=self.config.rl.discount,
                     **self.config.mcts,  # pass mcts related params
-                    **self.config.model,  # pass the value and reward support params
+                    **self.config.model,  # pass the value and reward
+                    **self.config.oc, # support params
                 )
                 if self.env == 'Atari' or self.env == 'Shapes2d':
                     if self.config.mcts.use_gumbel:
@@ -929,8 +931,8 @@ class BatchWorker(Worker):
                 values = values.squeeze().detach().cpu().numpy()
                 value_lst.append(values)
             if self.value_prefix and (i + 1) % self.lstm_horizon_len == 0:
-                reward_hidden = (torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda(),
-                                 torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda())
+                reward_hidden = torch.zeros(1, len(states), self.config.oc.n_slots,
+                                            self.config.model.lstm_hidden_size).cuda()
                 true_rewards = value_prefixes.squeeze().detach().cpu().numpy()
                 # last_values_prefixes = np.zeros(len(states))
             else:

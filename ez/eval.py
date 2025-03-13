@@ -119,6 +119,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             env=config.env.env,
             **config.mcts,  # pass mcts related params
             **config.model,  # pass the value and reward support params
+            **config.oc,
         )
         if config.env.env == 'Atari' or config.env.env == 'Shapes2d':
             if config.mcts.use_gumbel:

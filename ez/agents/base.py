@@ -693,8 +693,8 @@ class Agent:
 
     def init_reward_hidden(self, batch_size):
         if self.config.model.value_prefix:
-            reward_hidden = (torch.zeros(1, batch_size, self.config.model.lstm_hidden_size).cuda(),
-                             torch.zeros(1, batch_size, self.config.model.lstm_hidden_size).cuda())
+            reward_hidden = torch.zeros(1, batch_size, self.config.oc.n_slots,
+                                        self.config.model.lstm_hidden_size).cuda()
         else:
             reward_hidden = None
         return reward_hidden

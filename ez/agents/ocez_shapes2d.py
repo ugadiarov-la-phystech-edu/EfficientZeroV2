@@ -85,7 +85,7 @@ class OCEZShapes2dAgent(Agent):
 
         reward_output_size = self.config.model.reward_support.size
         if self.value_prefix:
-            reward_prediction_model = OCSupportLSTMNetwork(self.slot_dim, self.latent_dim, self.n_slots,
+            reward_prediction_model = OCSupportGRUGNN(self.slot_dim, self.latent_dim, self.n_slots,
                                                            reward_output_size, self.config.model.lstm_hidden_size)
         else:
             reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.n_slots, reward_output_size)

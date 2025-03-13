@@ -39,6 +39,7 @@ class MCTS:
         self.env = kwargs.get('env')
         self.vis = kwargs.get('vis')                                    # vis: [log, text, graph]
         self.std_magnification = kwargs.get('std_magnification')
+        self.n_slots = kwargs.get('n_slots')
 
         self.current_num_top_actions = self.num_top_actions             # /2 every phase
         self.current_phase = 0                                          # current phase index
