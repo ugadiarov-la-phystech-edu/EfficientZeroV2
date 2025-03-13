@@ -128,8 +128,8 @@ model:
   prjection_head_layers: [256, 1024]  # hidden dim, output dim
 
   fc_layers: [32]   # prev [32]
-  lstm_hidden_size: 512
-  lstm_horizon_len: 5
+  rnn_hidden_size: 512
+  rnn_horizon_len: 5
   value_ensumble: 1
 
   policy_distribution: squashed_gaussian  # beta or squashed_gaussian or truncated_gaussian or discretized

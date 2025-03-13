@@ -104,7 +104,7 @@ class EZShapes2dAgent(Agent):
         if self.value_prefix:
             reward_prediction_model = SupportLSTMNetwork(0, self.num_channels, self.reduced_channels,
                                            flatten_size, self.fc_layers, reward_output_size,
-                                           self.config.model.lstm_hidden_size, self.init_zero)
+                                           self.config.model.rnn_hidden_size, self.init_zero)
         else:
             reward_prediction_model = SupportNetwork(self.num_blocks, self.num_channels, self.reduced_channels,
                                            flatten_size, self.fc_layers, reward_output_size,

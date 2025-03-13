@@ -319,7 +319,7 @@ class RewardNetworkLSTM(nn.Module):
         hidden_shape,
         rew_net_shape,
         reward_support_size,
-        lstm_hidden_size,
+        rnn_hidden_size,
         init_zero=False,
         use_bn=True,
     ):
@@ -329,8 +329,8 @@ class RewardNetworkLSTM(nn.Module):
         self.reward_support_size = reward_support_size
         self.rew_resblock = ImproveResidualBlock(self.hidden_shape, self.hidden_shape)
         self.ln = nn.LayerNorm(self.hidden_shape)
-        self.lstm = nn.LSTM(input_size=self.hidden_shape, hidden_size=lstm_hidden_size)
-        self.rew_net = mlp(lstm_hidden_size, self.rew_net_shape, self.reward_support_size,
+        self.lstm = nn.LSTM(input_size=self.hidden_shape, hidden_size=rnn_hidden_size)
+        self.rew_net = mlp(rnn_hidden_size, self.rew_net_shape, self.reward_support_size,
                            init_zero=init_zero,
                            use_bn=use_bn)
 
@@ -509,7 +509,7 @@ class EZDMCStateAgent(Agent):
                                                 v_num=self.v_num)
 
         if self.config.model.value_prefix:
-            reward_prediction_model = RewardNetworkLSTM(self.hidden_shape, self.rew_net_shape, reward_output_size, self.config.model.lstm_hidden_size,
+            reward_prediction_model = RewardNetworkLSTM(self.hidden_shape, self.rew_net_shape, reward_output_size, self.config.model.rnn_hidden_size,
                                                         init_zero=self.init_zero, use_bn=self.use_bn)
         else:
             reward_prediction_model = RewardNetwork(self.hidden_shape, self.rew_net_shape, reward_output_size,

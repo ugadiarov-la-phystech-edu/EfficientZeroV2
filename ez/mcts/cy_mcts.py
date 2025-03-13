@@ -150,7 +150,7 @@ class CyMCTS(MCTS):
         value_min_max_lst = tree.MinMaxStatsList(batch_size)
         value_min_max_lst.set_static_val(self.value_minmax_delta, self.c_visit, self.c_scale)
 
-        reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.lstm_hidden_size).cuda().float()
+        reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.rnn_hidden_size).cuda().float()
 
         # index of states
         state_pool = [root_states]
@@ -232,7 +232,7 @@ class CyMCTS(MCTS):
             state_pool.append(next_states)
             # change value prefix to reward
             if self.value_prefix:
-                reset_idx = (np.array(search_lens) % self.lstm_horizon_len == 0)
+                reset_idx = (np.array(search_lens) % self.rnn_horizon_len == 0)
                 reward_hidden[:, reset_idx, :, :] = 0
                 reward_hidden_h_pool.append(reward_hidden)
             else:
@@ -309,7 +309,7 @@ class CyMCTS(MCTS):
         value_min_max_lst.set_delta(self.value_minmax_delta)
 
         if self.value_prefix:
-            reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.lstm_hidden_size).cuda().float()
+            reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.rnn_hidden_size).cuda().float()
         else:
             reward_hidden = None
 
@@ -367,7 +367,7 @@ class CyMCTS(MCTS):
             state_pool.append(next_states)
             # change value prefix to reward
             if self.value_prefix:
-                reset_idx = (np.array(search_lens) % self.lstm_horizon_len == 0)
+                reset_idx = (np.array(search_lens) % self.rnn_horizon_len == 0)
                 reward_hidden[:, reset_idx, :, :] = 0
                 reward_hidden_h_pool.append(reward_hidden)
             else:
@@ -412,10 +412,7 @@ class CyMCTS(MCTS):
         value_min_max_lst.set_static_val(self.value_minmax_delta, self.c_visit, self.c_scale)
 
         if self.value_prefix:
-            reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.lstm_hidden_size).cuda().float()
-
-            #reward_hidden = (torch.zeros(1, batch_size, self.lstm_hidden_size).cuda().float(),
-                         #torch.zeros(1, batch_size, self.lstm_hidden_size).cuda().float())
+            reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.rnn_hidden_size).cuda().float()
         else:
             reward_hidden = None
 
@@ -496,7 +493,7 @@ class CyMCTS(MCTS):
             # save to database
             state_pool.append(next_states)
             # change value prefix to reward
-            reset_idx = (np.array(search_lens) % self.lstm_horizon_len == 0)
+            reset_idx = (np.array(search_lens) % self.rnn_horizon_len == 0)
             if self.value_prefix:
                 reward_hidden[:, reset_idx, :, :] = 0
             to_reset_lst = reset_idx.astype(np.int32).tolist()

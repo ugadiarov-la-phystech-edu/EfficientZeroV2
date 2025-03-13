@@ -33,8 +33,8 @@ class MCTS:
         self.value_support = kwargs.get('value_support')
         self.reward_support = kwargs.get('reward_support')
         self.value_prefix = kwargs.get('value_prefix')
-        self.lstm_hidden_size = kwargs.get('lstm_hidden_size')
-        self.lstm_horizon_len = kwargs.get('lstm_horizon_len')
+        self.rnn_hidden_size = kwargs.get('rnn_hidden_size')
+        self.rnn_horizon_len = kwargs.get('rnn_horizon_len')
         self.mpc_horizon = kwargs.get('mpc_horizon')
         self.env = kwargs.get('env')
         self.vis = kwargs.get('vis')                                    # vis: [log, text, graph]
