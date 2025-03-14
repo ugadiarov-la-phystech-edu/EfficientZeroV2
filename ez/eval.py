@@ -146,7 +146,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             rewards[i].append(info['raw_reward'])
             dones[i] = done
             if info['is_success']:
-                success_rate+=1
+                success_rate+=1/n_episodes
 
 
             # save data to trajectory buffer
@@ -171,7 +171,6 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
                                ''.format(config.env.game, step, best_actions,
                                          ep_ori_rewards.mean(), ep_ori_rewards.max(), ep_ori_rewards.min()))
             pb.update(1)
-        success_rate /= n_episodes
 
     [env.close() for env in envs]
     for i in range(n_episodes):
