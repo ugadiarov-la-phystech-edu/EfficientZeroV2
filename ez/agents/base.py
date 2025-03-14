@@ -723,7 +723,7 @@ def train_ddp(agent, rank, replay_buffer, storage, batch_storage, logger):
         logger = wandb.init(
             name=wandb_name,
             project=agent.config.wandb.project,
-            id=agent.resume.wandb_id,
+            id=agent.config.wandb_id,
             resume='allow',
             config=agent.config,
         )
