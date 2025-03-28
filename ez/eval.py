@@ -144,7 +144,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             # rewards[i].append(reward)
             rewards[i].append(info['raw_reward'])
             dones[i] = done
-            if info['is_success']:
+            if info['is_success'] and dones[i]:
                 success_rate+=1/n_episodes
 
 
