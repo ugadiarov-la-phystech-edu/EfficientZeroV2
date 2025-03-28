@@ -53,14 +53,14 @@ class BatchWorker(Worker):
         self.GAE_max_steps = self.config.model.GAE_max_steps
         self.episodic = self.config.env.episodic
         self.value_prefix = self.config.model.value_prefix
-        self.lstm_horizon_len = self.config.model.lstm_horizon_len
+        self.rnn_horizon_len = self.config.model.rnn_horizon_len
         self.training_steps = self.config.train.training_steps
         self.td_lambda = self.config.rl.td_lambda
         self.gray_scale = self.config.env.gray_scale
         self.obs_shape = self.config.env.obs_shape
         self.trajectory_size = self.config.data.trajectory_size
         self.mixed_value_threshold = self.config.train.mixed_value_threshold
-        self.lstm_hidden_size = self.config.model.lstm_hidden_size
+        self.rnn_hidden_size = self.config.model.rnn_hidden_size
         self.cnt = 0
 
     def concat_trajs(self, items):
@@ -382,7 +382,7 @@ class BatchWorker(Worker):
             value_prefix = 0.0
             for i, current_index in enumerate(range(state_index, state_index + self.unroll_steps + 1)):
                 # reset every lstm_horizon_len
-                if horizon_id % self.lstm_horizon_len == 0 and self.value_prefix:
+                if horizon_id % self.rnn_horizon_len == 0 and self.value_prefix:
                     value_prefix = 0.0
                 horizon_id += 1
 
@@ -540,7 +540,7 @@ class BatchWorker(Worker):
             value_prefix = 0.0
             for i, current_index in enumerate(range(state_index, state_index + self.unroll_steps + 1)):
                 # reset every lstm_horizon_len
-                if horizon_id % self.lstm_horizon_len == 0 and self.value_prefix:
+                if horizon_id % self.rnn_horizon_len == 0 and self.value_prefix:
                     value_prefix = 0.0
                 horizon_id += 1
 
@@ -603,7 +603,7 @@ class BatchWorker(Worker):
             for current_index in range(state_index, state_index + self.unroll_steps + 1):
 
                 # reset every lstm_horizon_len
-                if horizon_id % self.lstm_horizon_len == 0 and self.value_prefix:
+                if horizon_id % self.rnn_horizon_len == 0 and self.value_prefix:
                     value_prefix = 0.0
                 horizon_id += 1
 
@@ -710,7 +710,7 @@ class BatchWorker(Worker):
                     value_lst[value_index] += reward * self.discount ** i
 
                 # reset every lstm_horizon_len
-                if horizon_id % self.lstm_horizon_len == 0 and self.value_prefix:
+                if horizon_id % self.rnn_horizon_len == 0 and self.value_prefix:
                     value_prefix = 0.0
                 horizon_id += 1
 
@@ -803,6 +803,7 @@ class BatchWorker(Worker):
             env=self.env,
             **self.config.mcts,  # pass mcts related params
             **self.config.model,  # pass the value and reward support params
+            **self.config.oc,
         )
         if self.env == 'Atari' or self.env == 'Shapes2d':
             if self.config.mcts.use_gumbel:
@@ -882,8 +883,8 @@ class BatchWorker(Worker):
         states = torch.cat([states for _ in range(times)], dim=0)
         values = np.concatenate([values for _ in range(times)], axis=0)
         policies = torch.cat([policies for _ in range(times)], dim=0)
-        reward_hidden = (torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda(),
-                         torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda())
+        reward_hidden = torch.zeros(1, len(states), self.config.oc.n_slots,
+                                    self.config.model.rnn_hidden_size).cuda()
         last_values_prefixes = np.zeros(len(states))
         reward_lst = []
         value_lst = []
@@ -894,7 +895,8 @@ class BatchWorker(Worker):
                     num_actions=self.config.env.action_space_size if (self.env == 'Atari'or self.env == 'Shapes2d') else self.config.mcts.num_top_actions,
                     discount=self.config.rl.discount,
                     **self.config.mcts,  # pass mcts related params
-                    **self.config.model,  # pass the value and reward support params
+                    **self.config.model,  # pass the value and reward
+                    **self.config.oc, # support params
                 )
                 if self.env == 'Atari' or self.env == 'Shapes2d':
                     if self.config.mcts.use_gumbel:
@@ -928,9 +930,9 @@ class BatchWorker(Worker):
                     self.model.recurrent_inference(states, actions, reward_hidden)
                 values = values.squeeze().detach().cpu().numpy()
                 value_lst.append(values)
-            if self.value_prefix and (i + 1) % self.lstm_horizon_len == 0:
-                reward_hidden = (torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda(),
-                                 torch.zeros(1, len(states), self.config.model.lstm_hidden_size).cuda())
+            if self.value_prefix and (i + 1) % self.rnn_horizon_len == 0:
+                reward_hidden = torch.zeros(1, len(states), self.config.oc.n_slots,
+                                            self.config.model.rnn_hidden_size).cuda()
                 true_rewards = value_prefixes.squeeze().detach().cpu().numpy()
                 # last_values_prefixes = np.zeros(len(states))
             else:

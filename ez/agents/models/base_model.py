@@ -314,15 +314,15 @@ class OCSupportNetwork(nn.Module):
 
 
 class SupportLSTMNetwork(nn.Module):
-    def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, output_support_size, lstm_hidden_size, init_zero):
+    def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, output_support_size, rnn_hidden_size, init_zero):
         super().__init__()
         self.flatten_size = flatten_size
 
         self.conv1x1_reward = nn.Conv2d(num_channels, reduced_channels, 1)
         self.bn_reward = nn.BatchNorm2d(reduced_channels)
-        self.lstm = nn.LSTM(input_size=flatten_size, hidden_size=lstm_hidden_size)
-        self.bn_reward_sum = nn.BatchNorm1d(lstm_hidden_size)
-        self.fc = mlp(lstm_hidden_size, fc_layers, output_support_size, init_zero=init_zero)
+        self.lstm = nn.LSTM(input_size=flatten_size, hidden_size=rnn_hidden_size)
+        self.bn_reward_sum = nn.BatchNorm1d(rnn_hidden_size)
+        self.fc = mlp(rnn_hidden_size, fc_layers, output_support_size, init_zero=init_zero)
 
     def forward(self, x, hidden):
         x = self.conv1x1_reward(x)
@@ -337,7 +337,7 @@ class SupportLSTMNetwork(nn.Module):
         return x, hidden
 
 class OCSupportLSTMNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, lstm_hidden_size):
+    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, rnn_hidden_size):
         super().__init__()
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
@@ -345,8 +345,8 @@ class OCSupportLSTMNetwork(nn.Module):
         self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
                               num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
         self.act = nn.ReLU(inplace=True)
-        self.lstm = nn.LSTM(input_size=self.slot_dim, hidden_size=lstm_hidden_size)
-        self.mlp = nn.Linear(in_features=lstm_hidden_size, out_features=output_support_size)
+        self.lstm = nn.LSTM(input_size=self.slot_dim, hidden_size=rnn_hidden_size)
+        self.mlp = nn.Linear(in_features=rnn_hidden_size, out_features=output_support_size)
 
     def forward(self, slots, hidden):
         x = self.gnn(slots, action=None)
@@ -356,6 +356,32 @@ class OCSupportLSTMNetwork(nn.Module):
         x = x.squeeze(0)
         x = self.mlp(x)
         return x, hidden
+
+class OCSupportGRUGNN(nn.Module):
+    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, rnn_hidden_size, update_bias=-1):
+        super(OCSupportGRUGNN, self).__init__()
+        self.slot_dim = slot_dim
+        self.latent_dim = latent_dim
+        self.rnn_hidden_size = rnn_hidden_size
+        self.n_slots = n_slots
+        self.act = nn.Tanh()
+        self.update_bias = update_bias
+        self.gnn = GNN(self.slot_dim + self.rnn_hidden_size, hidden_dim=self.latent_dim, action_dim=0, num_objects=self.n_slots,
+                        ignore_action=True, copy_action=False, edge_actions=False, output_dim=3 * self.rnn_hidden_size)
+        self.mlp = nn.Linear(in_features=self.rnn_hidden_size, out_features=output_support_size)
+
+    def forward(self, slots, hidden):
+        hidden = hidden.squeeze(0)
+        full_state = torch.cat([slots, hidden], dim=-1)
+        parts = self.gnn(full_state, None)[0]
+        reset, cand, update = torch.split(parts, [self.rnn_hidden_size] * 3, dim=-1)
+        reset = torch.sigmoid(reset)
+        cand = self.act(reset * cand)
+        update = torch.sigmoid(update + self.update_bias)
+        hidden = (update * cand + (1 - update) * slots)
+        output = self.mlp(hidden).sum(dim=1)
+        return output, hidden.unsqueeze(0)
+
 
 class ProjectionNetwork(nn.Module):
     def __init__(self, input_dim, hid_dim, out_dim):

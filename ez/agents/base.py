@@ -544,7 +544,7 @@ class Agent:
                 states.register_hook(lambda grad: grad * 0.5)
 
                 # reset reward hidden
-                if self.config.model.value_prefix and (step_i + 1) % self.config.model.lstm_horizon_len == 0:
+                if self.config.model.value_prefix and (step_i + 1) % self.config.model.rnn_horizon_len == 0:
                     reward_hidden = self.init_reward_hidden(batch_size)
 
         # total loss
@@ -693,8 +693,8 @@ class Agent:
 
     def init_reward_hidden(self, batch_size):
         if self.config.model.value_prefix:
-            reward_hidden = (torch.zeros(1, batch_size, self.config.model.lstm_hidden_size).cuda(),
-                             torch.zeros(1, batch_size, self.config.model.lstm_hidden_size).cuda())
+            reward_hidden = torch.zeros(1, batch_size, self.config.oc.n_slots,
+                                        self.config.model.rnn_hidden_size).cuda()
         else:
             reward_hidden = None
         return reward_hidden

@@ -150,15 +150,13 @@ class CyMCTS(MCTS):
         value_min_max_lst = tree.MinMaxStatsList(batch_size)
         value_min_max_lst.set_static_val(self.value_minmax_delta, self.c_visit, self.c_scale)
 
-        reward_hidden = (torch.zeros(1, batch_size, self.lstm_hidden_size).cuda().float(),
-                         torch.zeros(1, batch_size, self.lstm_hidden_size).cuda().float())
+        reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.rnn_hidden_size).cuda().float()
 
         # index of states
         state_pool = [root_states]
         hidden_state_index_x = 0
-        # 1 x batch x 64
-        reward_hidden_c_pool = [reward_hidden[0]]
-        reward_hidden_h_pool = [reward_hidden[1]]
+        # 1 x batch x n_slots х 64
+        reward_hidden_h_pool = [reward_hidden]
 
         assert batch_size == len(root_states) == len(root_values)
         # expand the roots and update the statistics
@@ -175,7 +173,6 @@ class CyMCTS(MCTS):
 
         for simulation_idx in range(self.num_simulations):
             current_states = []
-            hidden_states_c_reward = []
             hidden_states_h_reward = []
             results = tree.ResultsWrapper(batch_size)
 
@@ -195,7 +192,6 @@ class CyMCTS(MCTS):
             for ix, iy in zip(hidden_state_index_x_lst, hidden_state_index_y_lst):
                 current_states.append(state_pool[ix][iy])
                 if self.value_prefix:
-                    hidden_states_c_reward.append(reward_hidden_c_pool[ix][0][iy])
                     hidden_states_h_reward.append(reward_hidden_h_pool[ix][0][iy])
 
                 selected_actions.append(actions_pool[ix][iy][last_actions[ptr]])
@@ -203,12 +199,11 @@ class CyMCTS(MCTS):
 
             current_states = torch.stack(current_states)
             if self.value_prefix:
-                hidden_states_c_reward = torch.stack(hidden_states_c_reward).unsqueeze(0)
                 hidden_states_h_reward = torch.stack(hidden_states_h_reward).unsqueeze(0)
             selected_actions = torch.stack(selected_actions)
 
             # inference state, reward, value, policy given the current state
-            reward_hidden = (hidden_states_c_reward, hidden_states_h_reward)
+            reward_hidden = hidden_states_h_reward
             mcts_info[simulation_idx] = {
                 'states': current_states,
                 'actions': last_actions,
@@ -237,11 +232,9 @@ class CyMCTS(MCTS):
             state_pool.append(next_states)
             # change value prefix to reward
             if self.value_prefix:
-                reset_idx = (np.array(search_lens) % self.lstm_horizon_len == 0)
-                reward_hidden[0][:, reset_idx, :] = 0
-                reward_hidden[1][:, reset_idx, :] = 0
-                reward_hidden_c_pool.append(reward_hidden[0])
-                reward_hidden_h_pool.append(reward_hidden[1])
+                reset_idx = (np.array(search_lens) % self.rnn_horizon_len == 0)
+                reward_hidden[:, reset_idx, :, :] = 0
+                reward_hidden_h_pool.append(reward_hidden)
             else:
                 reset_idx = np.asarray([1. for _ in range(batch_size)])
 
@@ -316,8 +309,7 @@ class CyMCTS(MCTS):
         value_min_max_lst.set_delta(self.value_minmax_delta)
 
         if self.value_prefix:
-            reward_hidden = (torch.zeros(1, batch_size, self.lstm_hidden_size).cuda().float(),
-                             torch.zeros(1, batch_size, self.lstm_hidden_size).cuda().float())
+            reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.rnn_hidden_size).cuda().float()
         else:
             reward_hidden = None
 
@@ -325,8 +317,7 @@ class CyMCTS(MCTS):
         state_pool = [root_states]
         hidden_state_index_x = 0
         # 1 x batch x 64
-        reward_hidden_c_pool = [reward_hidden[0]]
-        reward_hidden_h_pool = [reward_hidden[1]]
+        reward_hidden_h_pool = [reward_hidden]
 
         assert batch_size == len(root_states) == len(root_values)
         # expand the roots and update the statistics
@@ -341,7 +332,6 @@ class CyMCTS(MCTS):
         mcts_info = {}
         for simulation_idx in range(self.num_simulations):
             current_states = []
-            hidden_states_c_reward = []
             hidden_states_h_reward = []
             results = ori_tree.ResultsWrapper(batch_size)
 
@@ -356,16 +346,14 @@ class CyMCTS(MCTS):
 
             for ix, iy in zip(hidden_state_index_x_lst, hidden_state_index_y_lst):
                 current_states.append(state_pool[ix][iy])
-                hidden_states_c_reward.append(reward_hidden_c_pool[ix][0][iy])
                 hidden_states_h_reward.append(reward_hidden_h_pool[ix][0][iy])
 
             current_states = torch.stack(current_states)
-            hidden_states_c_reward = torch.stack(hidden_states_c_reward).unsqueeze(0)
             hidden_states_h_reward = torch.stack(hidden_states_h_reward).unsqueeze(0)
             last_actions = torch.from_numpy(np.asarray(last_actions)).cuda().long().unsqueeze(1)
 
             # inference state, reward, value, policy given the current state
-            reward_hidden = (hidden_states_c_reward, hidden_states_h_reward)
+            reward_hidden = hidden_states_h_reward
 
             next_states, next_value_prefixes, next_values, next_logits, reward_hidden = self.update_statistics(
                 prediction=True,                                    # use model prediction instead of env simulation
@@ -379,11 +367,9 @@ class CyMCTS(MCTS):
             state_pool.append(next_states)
             # change value prefix to reward
             if self.value_prefix:
-                reset_idx = (np.array(search_lens) % self.lstm_horizon_len == 0)
-                reward_hidden[0][:, reset_idx, :] = 0
-                reward_hidden[1][:, reset_idx, :] = 0
-                reward_hidden_c_pool.append(reward_hidden[0])
-                reward_hidden_h_pool.append(reward_hidden[1])
+                reset_idx = (np.array(search_lens) % self.rnn_horizon_len == 0)
+                reward_hidden[:, reset_idx, :, :] = 0
+                reward_hidden_h_pool.append(reward_hidden)
             else:
                 reset_idx = np.asarray([1. for _ in range(batch_size)])
             to_reset_lst = reset_idx.astype(np.int32).tolist()
@@ -426,8 +412,7 @@ class CyMCTS(MCTS):
         value_min_max_lst.set_static_val(self.value_minmax_delta, self.c_visit, self.c_scale)
 
         if self.value_prefix:
-            reward_hidden = (torch.zeros(1, batch_size, self.lstm_hidden_size).cuda().float(),
-                             torch.zeros(1, batch_size, self.lstm_hidden_size).cuda().float())
+            reward_hidden = torch.zeros(1, batch_size, self.n_slots, self.rnn_hidden_size).cuda().float()
         else:
             reward_hidden = None
 
@@ -435,8 +420,7 @@ class CyMCTS(MCTS):
         state_pool = [root_states]
         hidden_state_index_x = 0
         # 1 x batch x 64
-        reward_hidden_c_pool = [reward_hidden[0]]
-        reward_hidden_h_pool = [reward_hidden[1]]
+        reward_hidden_h_pool = [reward_hidden]
 
         # set gumble noise (during training)
         if use_gumble_noise:
@@ -459,7 +443,6 @@ class CyMCTS(MCTS):
         mcts_info = {}
         for simulation_idx in range(self.num_simulations):
             current_states = []
-            hidden_states_c_reward = []
             hidden_states_h_reward = []
             results = tree.ResultsWrapper(batch_size)
             # results1 = tree2.ResultsWrapper(roots1.num)
@@ -478,16 +461,14 @@ class CyMCTS(MCTS):
 
             for ix, iy in zip(hidden_state_index_x_lst, hidden_state_index_y_lst):
                 current_states.append(state_pool[ix][iy])
-                hidden_states_c_reward.append(reward_hidden_c_pool[ix][0][iy])
                 hidden_states_h_reward.append(reward_hidden_h_pool[ix][0][iy])
 
             current_states = torch.stack(current_states)
-            hidden_states_c_reward = torch.stack(hidden_states_c_reward).unsqueeze(0)
             hidden_states_h_reward = torch.stack(hidden_states_h_reward).unsqueeze(0)
             last_actions = torch.from_numpy(np.asarray(last_actions)).cuda().long().unsqueeze(1)
 
             # inference state, reward, value, policy given the current state
-            reward_hidden = (hidden_states_c_reward, hidden_states_h_reward)
+            reward_hidden = hidden_states_h_reward
             mcts_info[simulation_idx] = {
                 'states': current_states,
                 'actions': last_actions,
@@ -512,16 +493,14 @@ class CyMCTS(MCTS):
             # save to database
             state_pool.append(next_states)
             # change value prefix to reward
-            reset_idx = (np.array(search_lens) % self.lstm_horizon_len == 0)
+            reset_idx = (np.array(search_lens) % self.rnn_horizon_len == 0)
             if self.value_prefix:
-                reward_hidden[0][:, reset_idx, :] = 0
-                reward_hidden[1][:, reset_idx, :] = 0
+                reward_hidden[:, reset_idx, :, :] = 0
             to_reset_lst = reset_idx.astype(np.int32).tolist()
             if not self.value_prefix:
                 to_reset_lst = [1 for _ in range(batch_size)]
 
-            reward_hidden_c_pool.append(reward_hidden[0])
-            reward_hidden_h_pool.append(reward_hidden[1])
+            reward_hidden_h_pool.append(reward_hidden)
             hidden_state_index_x += 1
             # expand the leaf node and backward for statistics update
             tree.batch_back_propagate(hidden_state_index_x, next_value_prefixes.squeeze(-1).tolist(), next_values.squeeze(-1).tolist(), next_logits.tolist(), value_min_max_lst, results, to_reset_lst, self.num_actions)
