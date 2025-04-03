@@ -1,5 +1,5 @@
 torch==2.0.1
-numpy==1.20.0
+numpy==1.24.4
 torchvision==0.15.2
 gym==0.22.0
 gym[atari]==0.22.0
