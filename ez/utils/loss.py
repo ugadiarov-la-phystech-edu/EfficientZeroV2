@@ -13,7 +13,6 @@ from ez.utils.format import symlog, symexp, DiscreteSupport
 from torch.cuda.amp import autocast as autocast
 
 
-
 def cosine_similarity_loss(f1, f2):
     """Cosine Consistency loss function: similarity loss
     Parameters
@@ -21,9 +20,6 @@ def cosine_similarity_loss(f1, f2):
     f1 = F.normalize(f1, p=2., dim=-1, eps=1e-5)
     f2 = F.normalize(f2, p=2., dim=-1, eps=1e-5)
     return -(f1 * f2).sum(dim=1)
-
-def mse_loss(prediction, target):
-    return nn.MSELoss(reduction='none')(input, target).mean(dim=1)
 
 
 def kl_loss(prediction, target):

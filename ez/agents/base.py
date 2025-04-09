@@ -29,7 +29,7 @@ from torch.cuda.amp import GradScaler as GradScaler
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from ez.utils.format import get_ddp_model_weights, DiscreteSupport, symexp
-from ez.utils.loss import mse_loss, kl_loss, cosine_similarity_loss, continuous_loss, symlog_loss, Value_loss
+from ez.utils.loss import kl_loss, cosine_similarity_loss, continuous_loss, symlog_loss, Value_loss
 from ez.data.trajectory import GameTrajectory
 from ez.data.augmentation import Transforms
 
@@ -517,7 +517,6 @@ class Agent:
                 dynamic_states_proj = model.do_projection(states, with_grad=True)
                 gt_states_proj = model.do_projection(gt_next_states, with_grad=False)
                 consistency_loss += cosine_similarity_loss(dynamic_states_proj, gt_states_proj) * mask
-                #consistency_loss += mse_loss(dynamic_states_proj, gt_states_proj) * mask
   
                 # reward, value, policy loss
                 if self.config.model.reward_support.type == 'symlog':

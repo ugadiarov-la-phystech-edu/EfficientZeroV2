@@ -7,11 +7,7 @@ import torch
 import math
 import torch.nn as nn
 import numpy as np
-from .layer import ResidualBlock, GNN, conv3x3, mlp
-from omegaconf import OmegaConf
-from collections import namedtuple
-from ez.ocr.slate.slate import SLATE
-from ez.ocr.tools import obs_to_tensor
+from .layer import ResidualBlock, conv3x3, mlp
 
 
 # Down_sample observations before representation network (See paper appendix Network Architecture)
@@ -102,24 +98,6 @@ class RepresentationNetwork(nn.Module):
             x = block(x)
         return x
 
-class OCRepresentationNetwork(nn.Module):
-    def __init__(self, ocr_config_path, obs_size, checkpoint_path):
-        super().__init__()
-        self.ocr_config_path = ocr_config_path
-        self.obs_size = obs_size
-        self.config_ocr = OmegaConf.load(self.ocr_config_path)
-        config_env = namedtuple('EnvConfig', ['obs_size', 'obs_channels'])(self.obs_size, 3)
-        self.slate = SLATE(self.config_ocr, config_env, observation_space=None, preserve_slot_order=True)
-        self.checkpoint_path = checkpoint_path
-        state_dict = torch.load(self.checkpoint_path)["ocr_module_state_dict"]
-        self.slate._module.load_state_dict(state_dict)
-        self.slate.requires_grad_(False)
-        self.slate.eval()
-
-    def forward(self, x):
-        slots = self.slate._module._get_slots(x)
-        return slots
-
 # Predict next hidden states given current states and actions
 class DynamicsNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, action_space_size, is_continuous=False, action_embedding=False, action_embedding_dim=32):
@@ -182,19 +160,6 @@ class DynamicsNetwork(nn.Module):
 
         return state
 
-class OCDynamicsNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, action_space_size, n_slots):
-        super().__init__()
-        self.slot_dim = slot_dim
-        self.latent_dim = latent_dim
-        self.action_space_size = action_space_size
-        self.n_slots = n_slots
-        self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim,
-                              action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
-                              copy_action=True, edge_actions=True)
-    def forward(self, slots, action):
-        return self.gnn(slots, action)
-
 class ValuePolicyNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, value_output_size,
                  policy_output_size, init_zero, is_continuous=False, policy_distribution='beta', **kwargs):
@@ -244,39 +209,6 @@ class ValuePolicyNetwork(nn.Module):
 
         return torch.stack(values), policy
 
-class OCValuePolicyNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, value_output_size,
-                 policy_output_size, is_continuous=False, **kwargs):
-        super().__init__()
-        self.v_num = kwargs.get('v_num')
-        self.slot_dim = slot_dim
-        self.latent_dim = latent_dim
-        self.n_slots = n_slots
-        self.is_continuous = is_continuous
-        self.gnn_policy = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
-                              num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
-        self.mlp_policy = nn.Linear(in_features=self.slot_dim, out_features=policy_output_size)
-
-        self.gnn_values = nn.ModuleList([GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
-                               num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False) for _ in range(self.v_num)])
-        self.mlp_values = nn.ModuleList([nn.Linear(in_features=self.slot_dim, out_features=value_output_size) for _ in range(self.v_num)])
-        self.act = nn.ReLU(inplace=True)
-
-    def forward(self, slots):
-        #TODO is continuous
-        x = self.gnn_policy(slots, action=None)
-        x = self.act(x)
-        policy = self.mlp_policy(x.mean(dim=1))
-
-        values = []
-        for i in range(self.v_num):
-            x = self.gnn_values[i](slots, action=None)
-            x = self.act(x)
-            value = self.mlp_values[i](x.mean(dim=1))
-            values.append(value)
-
-        return torch.stack(values), policy
-
 class SupportNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, output_support_size, init_zero):
         super().__init__()
@@ -294,24 +226,6 @@ class SupportNetwork(nn.Module):
         x = x.reshape(-1, self.flatten_size)
         x = self.fc(x)
         return x
-    
-class OCSupportNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size):
-        super().__init__()
-        self.slot_dim = slot_dim
-        self.latent_dim = latent_dim
-        self.n_slots = n_slots
-        self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
-                              num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
-        self.act = nn.ReLU(inplace=True)
-        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
-
-    def forward(self, slots):
-        x = self.gnn(slots, action=None)
-        x = self.act(x)
-        reward = self.mlp(x.mean(dim=1))
-        return reward
-
 
 class SupportLSTMNetwork(nn.Module):
     def __init__(self, num_blocks, num_channels, reduced_channels, flatten_size, fc_layers, output_support_size, lstm_hidden_size, init_zero):
@@ -336,28 +250,6 @@ class SupportLSTMNetwork(nn.Module):
         x = self.fc(x)
         return x, hidden
 
-class OCSupportLSTMNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, lstm_hidden_size):
-        super().__init__()
-        self.slot_dim = slot_dim
-        self.latent_dim = latent_dim
-        self.n_slots = n_slots
-        self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
-                              num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
-        self.act = nn.ReLU(inplace=True)
-        self.lstm = nn.LSTM(input_size=self.slot_dim, hidden_size=lstm_hidden_size)
-        self.mlp = nn.Linear(in_features=lstm_hidden_size, out_features=output_support_size)
-
-    def forward(self, slots, hidden):
-        x = self.gnn(slots, action=None)
-        x = self.act(x)
-        x = x.mean(dim=1).unsqueeze(0)
-        x, hidden = self.lstm(x, hidden)
-        x = x.squeeze(0)
-        x = self.mlp(x)
-        return x, hidden
-
-
 class ProjectionNetwork(nn.Module):
     def __init__(self, input_dim, hid_dim, out_dim):
         super().__init__()
@@ -379,35 +271,6 @@ class ProjectionNetwork(nn.Module):
     def forward(self, x):
         x = x.reshape(-1, self.input_dim)
         return self.layer(x)
-
-class OCProjectionNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, hid_dim, out_dim):
-        super().__init__()
-        super().__init__()
-        self.slot_dim = slot_dim
-        self.latent_dim = latent_dim
-        self.n_slots = n_slots
-        self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
-                              num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
-        self.act = nn.ReLU(inplace=True)
-        self.layer = nn.Sequential(
-            nn.Linear(self.slot_dim, hid_dim),
-            nn.BatchNorm1d(hid_dim),
-            nn.ReLU(),
-
-            nn.Linear(hid_dim, hid_dim),
-            nn.BatchNorm1d(hid_dim),
-            nn.ReLU(),
-
-            nn.Linear(hid_dim, out_dim),
-            nn.BatchNorm1d(out_dim)
-        )
-
-    def forward(self, slots):
-        x = self.gnn(slots, action=None)
-        x = self.act(x)
-        x = self.layer(x.mean(dim=1))
-        return x
 
 class ProjectionHeadNetwork(nn.Module):
     def __init__(self, input_dim, hid_dim, out_dim):

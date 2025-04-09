@@ -19,7 +19,6 @@ priority:
 train:
 data:
 mcts:
-oc:
 model:
 actors:
 wandb:
@@ -67,7 +66,7 @@ eval:
   save_path: test
   model_path: ''
   model_path_new: ''
-  n_episodes: 1  # 10 for training, 1 for eval.sh
+  n_episodes: 10  # 10 for training, 1 for eval.sh
   compare_value: False
   analysis_value: False
 
