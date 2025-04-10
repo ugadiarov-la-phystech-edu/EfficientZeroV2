@@ -266,7 +266,7 @@ class Shapes2d(gym.Env):
             info['masks'] = masks
         else:
             image = self._get_observation()
-        return image, info
+        return image
 
     def _get_type(self, box_id):
         if box_id in self.goal_ids:
@@ -398,12 +398,12 @@ class Shapes2d(gym.Env):
         else:
             observation = None
 
-        return observation, reward, terminated, truncated, info
+        return observation, reward, terminated and truncated, info
 
     def _get_all_moving_boxes(self):
         moving_boxes = []
         for action in range(self.action_space.n):
-            _, _, _, _, info = self._make_step(action, simulate=True, return_observation=False, increment_step=False)
+            _, _, _, info = self._make_step(action, simulate=True, return_observation=False, increment_step=False)
             moving_boxes.append(info[Shapes2d.MOVED_BOXES_KEY])
 
         return moving_boxes
@@ -418,7 +418,7 @@ class Shapes2d(gym.Env):
 
         for sub_step in range(speed):
             is_last_sub_step = sub_step == speed - 1
-            observation, sub_reward, terminated, truncated, info = \
+            observation, sub_reward, done, info = \
                 self._sub_step(action, return_observation=is_last_sub_step,
                                increment_step=is_last_sub_step)
             reward += sub_reward
@@ -438,15 +438,15 @@ class Shapes2d(gym.Env):
         info[Shapes2d.MOVED_BOXES_KEY] = moved_boxes
         info[Shapes2d.COORDINATES] = self._get_coordinates_info()
 
-        return observation, reward, terminated, truncated, info
+        return observation, reward, done, info
 
     def _sub_step(self, action, return_observation, increment_step):
-        observation, reward, terminated, truncated, info = self._make_step(action, simulate=False,
+        observation, reward, done, info = self._make_step(action, simulate=False,
                                                                            return_observation=return_observation,
                                                                            increment_step=increment_step)
         info[Shapes2d.MOVING_BOXES_KEY] = self._get_all_moving_boxes()
 
-        return observation, reward, terminated, truncated, info
+        return observation, reward, done, info
 
     def _is_in_grid(self, point, box_id):
         if not self.embodied_agent or box_id == 0:
