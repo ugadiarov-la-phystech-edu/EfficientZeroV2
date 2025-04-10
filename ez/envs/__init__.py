@@ -184,11 +184,6 @@ def make_dmc(game_name, seed, save_path=None, **kwargs):
 
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
-    # save video to given
-    # if save_path:
-    #     env = Monitor(env, directory=save_path, force=True)
-
-    # your wrapper
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
     return env
 
@@ -197,6 +192,8 @@ def make_shapes2d(game_name, seed, save_path=None, **kwargs):
     gray_scale = kwargs.get('gray_scale')
     obs_shape = kwargs['obs_shape']
     max_episode_steps = kwargs['max_episode_steps']
+    clip_reward = kwargs.get('clip_reward')
+    obs_to_string = kwargs.get('obs_to_string')
 
     env = gym.make(game_name)
 
@@ -204,7 +201,7 @@ def make_shapes2d(game_name, seed, save_path=None, **kwargs):
 
     env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
 
-    env = GymWrapper(env)
-
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
+
+    env = AtariWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
     return env
