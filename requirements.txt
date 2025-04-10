@@ -24,3 +24,4 @@ colorednoise==2.2.0
 matplotlib==3.3.4
 scikit-image==0.18.3
 gymnasium==0.26.3
+causal_world==1.2
