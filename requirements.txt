@@ -1,9 +1,9 @@
 torch==2.0.1
-numpy==1.24.4
+numpy==1.23.5
 torchvision==0.15.2
-gym==0.26.1
-gym[atari]==0.26.1
-gym[accept-rom-license]==0.26.1
+gym==0.22.0
+gym[atari]==0.22.0
+gym[accept-rom-license]==0.22.0
 cython
 PyOpenGL-accelerate
 hydra-core
@@ -24,4 +24,4 @@ colorednoise==2.2.0
 matplotlib==3.3.4
 scikit-image==0.18.3
 gymnasium==0.26.3
-ipdb
+causal_world==1.2
