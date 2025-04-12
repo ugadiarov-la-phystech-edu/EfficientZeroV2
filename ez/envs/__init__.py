@@ -9,6 +9,8 @@ import random
 from dm_env import specs
 from ez.utils.format import arr_to_str
 from ez.envs.shapes2d import shapes2d
+from omegaconf import OmegaConf
+from causal_world.cw_envs import CwTargetEnv
 
 
 def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
@@ -187,7 +189,7 @@ def make_dmc(game_name, seed, save_path=None, **kwargs):
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
     return env
 
-def make_shapes2d(game_name, seed, save_path=None, **kwargs):
+def make_shapes2d(game_name, seed, **kwargs):
 
     gray_scale = kwargs.get('gray_scale')
     obs_shape = kwargs['obs_shape']
@@ -204,4 +206,15 @@ def make_shapes2d(game_name, seed, save_path=None, **kwargs):
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
     env = AtariWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
+    return env
+
+def make_causal_world(game_name, seed, **kwargs):
+
+    env_config_path = 'cw_envs/config/reaching-hard_orig.yaml'
+    env_config = OmegaConf.load(env_config_path)
+
+    env = CwTargetEnv(env_config, seed)
+    env.action_space.seed(seed)
+    env = TimeLimit(env, env.unwrapped._max_episode_length)
+
     return env
