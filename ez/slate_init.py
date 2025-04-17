@@ -19,7 +19,7 @@ if __name__ == '__main__':
     device = 'cuda'
     slate.to(device)
 
-    checkpoint_path = 'navigation5x5/model_best_new.pth'
+    checkpoint_path = 'ocr/slate_weights/navigation5х5.pth'
     state_dict = torch.load(checkpoint_path)["ocr_module_state_dict"]
     slate._module.load_state_dict(state_dict)
     slate.requires_grad_(False)

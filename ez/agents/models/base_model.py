@@ -263,10 +263,15 @@ class OCValuePolicyNetwork(nn.Module):
         self.act = nn.ReLU(inplace=True)
 
     def forward(self, slots):
-        #TODO is continuous
         x = self.gnn_policy(slots, action=None)
         x = self.act(x)
         policy = self.mlp_policy(x.sum(dim=1))
+
+        if self.is_continuous:
+            action_space_size = policy.shape[-1] // 2
+            policy[:, :action_space_size] = 5 * torch.tanh(policy[:, :action_space_size] / 5)  # soft clamp mu
+            policy[:, action_space_size:] = (torch.nn.functional.softplus(
+            policy[:, action_space_size:] + self.init_std) + self.min_std)  # .clip(0, 5)  # same as Dreamer-v3
 
         values = []
         for i in range(self.v_num):
