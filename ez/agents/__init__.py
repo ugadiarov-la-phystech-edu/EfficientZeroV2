@@ -7,6 +7,7 @@ from ez.agents.ez_atari import EZAtariAgent
 from ez.agents.ez_dmc_image import EZDMCImageAgent
 from ez.agents.ez_dmc_state import EZDMCStateAgent
 from ez.agents.ez_shapes2d import EZShapes2dAgent
+from ez.agents.ez_cw import EZCWAgent
 from ez.agents.ocez_shapes2d import OCEZShapes2dAgent
 
 names = {
@@ -15,4 +16,5 @@ names = {
     'dmc_state_agent': EZDMCStateAgent,
     'shapes2d_agent': EZShapes2dAgent,
     'oc_shapes2d_agent': OCEZShapes2dAgent,
+    'cw_agent': EZCWAgent,
 }

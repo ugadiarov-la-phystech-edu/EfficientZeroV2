@@ -1,34 +1,35 @@
 # agent
-agent_name: shapes2d_agent
+agent_name: cw_agent
 
 # env setting
 env:
-  env: Shapes2d
-  game: Navigation5x5-v0
+  env: causal_world
+  game: reaching
   base_seed: 0
-  n_skip: 0
-  n_stack: 1
-  max_episode_steps: 100
+  n_skip: 1
+  n_stack: 3
+  max_episode_steps: 1000
   gray_scale: False
   image_based: True
-  clip_reward: True
+  clip_reward: False
   obs_shape: [3, 96, 96]
   episodic: True
+  setting: 'ez/envs/causal_world/cw_envs/config/reaching-hard_orig.yaml'
 
 rl:
-  discount: 0.997
+  discount: 0.99
   unroll_steps: 5   # prev 5
   td_steps: 5
-  auto_td_steps: 30000  # prev 30000
+  auto_td_steps: 30000  # prev 30000 for 100K env steps
   td_lambda: 0.95
 
 
 # optimizer
 optimizer:
   type: SGD
-  lr: 0.2 # prev 0.2
-  lr_decay_type: none
+  lr: 0.2   # prev 0.2
   lr_warm_up: 0.01
+  lr_decay_type: none
   lr_decay_rate: 0.1
   lr_decay_steps: 100000
   weight_decay: 1e-4
@@ -38,19 +39,19 @@ optimizer:
 priority:
   use_priority: True
   priority_prob_alpha: 1.0  # prev 0.6
-  priority_prob_beta: 1.0  # prev 0.4
+  priority_prob_beta: 1.0   # prev 0.4
   min_prior: 0.000001
 
 # training
 train:
   load_model_path: ''
   batch_size: 256
-  training_steps: 100000        # 100 * 1000
-  offline_training_steps: 20000 # 20 * 1000
+  training_steps: 200000        # 100 * 1000
+  offline_training_steps: 20000     # 20 * 1000
   start_transitions: 2000       # 2 * 1000
 
   eval_n_episode: 10
-  eval_interval: 10000
+  eval_interval: 5000
 
   self_play_update_interval: 100
   reanalyze_update_interval: 200
@@ -60,9 +61,9 @@ train:
   reanalyze_ratio: 1.0
 
   reward_loss_coeff: 1.0
-  value_loss_coeff: 0.5  # prev 0.25, 1.5 for test model-free value fitting
-  policy_loss_coeff: 1.0   # prev 1.0
-  consistency_coeff: 5.0  # prev 2.0
+  value_loss_coeff: 0.5   # prev 0.25
+  policy_loss_coeff: 1.0
+  consistency_coeff: 2.0
   decorrelation_coeff: 0.01
   off_diag_coeff: 5e-3
   entropy_coeff: 5e-3
@@ -79,48 +80,48 @@ train:
   v_num: 1
   value_target: 'mixed'   # sarsa or search or mixed or max
   use_IQL: False
-  IQL_weight: 0.7
-  start_use_mix_training_steps: 3e4
-  mixed_value_threshold: 5e3
+  IQL_weight: 0.5
+  start_use_mix_training_steps: 4e4
+  mixed_value_threshold: 2e4
 
 # self-play data collection
 data:
   num_envs: 4
-  buffer_size: 1000000      # 1 * 1000 * 1000
-  total_transitions: 100000 # 100 * 1000
+  buffer_size: 200000      # 1 * 1000 * 1000
+  total_transitions: 200000 # 1000 * 1000
   top_transitions: 2e5
-  trajectory_size: 400
+  trajectory_size: 100   # prev 500
   save_video: False
   save_as_dataset: False
 
 # MCTS
 mcts:
   language: cython
-  num_simulations: 16   # prev 8, ori_mcts 50
-  num_top_actions: 4  # prev 4
+  num_simulations: 32   # prev 8
+  num_top_actions: 16  # prev 4
+  num_sampled_actions: 16
   c_visit: 50
-  c_scale: 0.1    # prev 0.1
-  c_base: 19652
-  c_init: 1.25
-  dirichlet_alpha: 0.3
-  explore_frac: 0.25
+  c_scale: 0.1  # prev 1.0
   value_minmax_delta: 0.01
-  vis: ['print']
   mpc_horizon: 1
-  use_gumbel: True
+  vis: ['print']
+  use_mppi: False
+  std_magnification: 3
 
 # model architecture
 model:
   noisy_net: False
   action_embedding: True
   action_embedding_dim: 16
+  block_type: resnet   # resnet, convnext
   down_sample: True
   state_norm: False
-  value_prefix: True
+  value_prefix: False
   value_target: bootstrapped # bootstrapped or GAE
   GAE_max_steps: 15 # 10 or 15 or 20
-  init_zero: True    # prev True
-  num_blocks: 1   # prev 1
+  dynamic_type: None  # RNN or Transformer or None
+  init_zero: True
+  num_blocks: 1 # prev 1
   num_channels: 64
   reduced_channels: 16
 
@@ -128,30 +129,36 @@ model:
   prjection_head_layers: [256, 1024]  # hidden dim, output dim
 
   fc_layers: [32]   # prev [32]
-  rnn_hidden_size: 512
-  rnn_horizon_len: 5
+  lstm_hidden_size: 512
+  lstm_horizon_len: 5
+  value_ensumble: 1
+
+  policy_distribution: squashed_gaussian  # beta or squashed_gaussian or truncated_gaussian or discretized
   policy_loss_type: reanalyze  # policy_gradient or reanalyze
+  policy_action_num: 4
+  random_action_num: 12
+  random_type: std   # std, normal, pink, OU
 
   reward_support:
-    range: [-300, 300]
-    scale: 1
-    env: Shapes2d
+    range: [-2, 2]
+    scale: 0.01
+    env: causal_world
     bins: 51
     type: support   # support or symlog
   value_support:
-    range: [-300, 300]
-    scale: 1
-    env: Shapes2d
+    range: [-299, 299]
+    scale: 0.5
+    env: causal_world
     bins: 51
-    type: support  # support or symlog
+    type: support   # support or symlog
 
 # worker process allocation
 actors:
-  data_worker: 1
-  batch_worker: 8  # oriMCTS 16
+  data_worker: 2
+  batch_worker: 8
 
 # wandb
 wandb:
   project: 'ez-v2-release'
-  tag: 'Shapes2d'
+  tag: 'causal_world'
   debug: False

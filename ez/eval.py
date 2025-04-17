@@ -156,6 +156,8 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
                 game_trajs[i].snapshot_lst.append(envs[i].ale.cloneState())
             elif config.env.env == 'Shapes2d':
                 game_trajs[i].snapshot_lst.append(envs[i].clone_full_state())
+            elif config.env.env == 'causal_world':
+                game_trajs[i].snapshot_lst.append(envs[i].get_state())
             else:
                 game_trajs[i].snapshot_lst.append(envs[i].physics.get_state())
 
