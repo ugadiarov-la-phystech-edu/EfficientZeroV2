@@ -15,4 +15,4 @@ if __name__ == '__main__':
     done = False
     while not done:
         obs, rew, done, info = env.step(env.action_space.sample())
-        print(rew)
+        print(obs.shape)

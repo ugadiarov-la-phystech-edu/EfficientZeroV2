@@ -154,7 +154,7 @@ class BatchWorker(Worker):
         traj_lst = self.concat_trajs(traj_lst)
 
         # part of policy will be reanalyzed
-        reanalyze_batch_size = batch_size if self.env in ['DMC', 'Gym'] \
+        reanalyze_batch_size = batch_size if self.env in ['DMC', 'Gym', 'causal_world'] \
             else int(batch_size * self.config.train.reanalyze_ratio)
         assert 0 <= reanalyze_batch_size <= batch_size
 
@@ -173,7 +173,7 @@ class BatchWorker(Worker):
 
             top_new_masks.append(int(sample_idx > collected_transitions - self.mixed_value_threshold))
 
-            if self.env in ['DMC', 'Gym']:
+            if self.env in ['DMC', 'Gym', 'causal_world']:
                 _actions = traj.action_lst[state_index:state_index + self.unroll_steps]
                 _unroll_actions = traj.action_lst[state_index + 1:state_index + 1 + self.unroll_steps]
                 # _unroll_actions = traj.action_lst[state_index:state_index + self.unroll_steps]
@@ -237,7 +237,7 @@ class BatchWorker(Worker):
             batch_policies_non_re = []
         # concat target policy
         batch_policies = batch_policies_re
-        if self.env in ['DMC', 'Gym']:
+        if self.env in ['DMC', 'Gym', 'causal_world']:
             batch_best_actions = best_actions.reshape(batch_size, self.unroll_steps + 1,
                                                       self.action_space_size)
         else:
@@ -245,7 +245,7 @@ class BatchWorker(Worker):
                                                                   self.unroll_steps + 1)
 
         # target value prefix (reward), value, policy
-        if self.env not in ['DMC', 'Gym']:
+        if self.env not in ['DMC', 'Gym','causal_world']:
             batch_actions = np.ones_like(batch_policies)
         else:
             batch_actions = sampled_actions.reshape(
@@ -850,7 +850,7 @@ class BatchWorker(Worker):
                         mismatch_index.append(ind + current_index - state_index)
                 else:
                     search_values.append(0.0)
-                    if self.env in ['DMC','Gym']:
+                    if self.env in ['DMC','Gym','causal_world']:
                         target_policies.append([0 for _ in range(sampled_actions.shape[1])])
                     else:
                         target_policies.append([0 for _ in range(self.action_space_size)])
