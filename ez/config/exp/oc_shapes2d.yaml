@@ -111,7 +111,7 @@ mcts:
   use_gumbel: True
 
 oc:
-  ocr_config_path: 'ez/ocr/slate/config/navigation5х5.yaml'
+  ocr_config_path: 'ez/ocr/slate/config/navigation5x5.yaml'
   checkpoint_path: 'ez/ocr/slate_weights/navigation5х5.pth'
   n_slots: 6
   slot_dim: 64

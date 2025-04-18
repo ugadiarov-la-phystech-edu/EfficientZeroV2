@@ -193,6 +193,8 @@ class OCDynamicsNetwork(nn.Module):
                               action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
                               copy_action=True, edge_actions=True)
     def forward(self, slots, action):
+        print(f'self.action_space_size = {self.action_space_size}')
+        print(f'action = {action}')
         return self.gnn(slots, action)
 
 class ValuePolicyNetwork(nn.Module):
@@ -252,7 +254,6 @@ class OCValuePolicyNetwork(nn.Module):
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
         self.n_slots = n_slots
-        self.is_continuous = is_continuous
         self.gnn_policy = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
                               num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
         self.mlp_policy = nn.Linear(in_features=self.slot_dim, out_features=policy_output_size)
@@ -261,6 +262,10 @@ class OCValuePolicyNetwork(nn.Module):
                                num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False) for _ in range(self.v_num)])
         self.mlp_values = nn.ModuleList([nn.Linear(in_features=self.slot_dim, out_features=value_output_size) for _ in range(self.v_num)])
         self.act = nn.ReLU(inplace=True)
+
+        self.is_continuous = is_continuous
+        self.init_std = 1.0
+        self.min_std = 0.1
 
     def forward(self, slots):
         x = self.gnn_policy(slots, action=None)

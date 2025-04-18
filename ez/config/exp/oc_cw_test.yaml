@@ -6,13 +6,13 @@ env:
   env: causal_world
   game: reaching
   base_seed: 0
-  n_skip: 1
-  n_stack: 3
+  n_skip: 0
+  n_stack: 1
   max_episode_steps: 10
   gray_scale: False
   image_based: True
   clip_reward: False
-  obs_shape: [3, 96, 96]
+  obs_shape: [3, 64, 64]
   episodic: True
   setting: 'ez/envs/causal_world/cw_envs/config/reaching-hard_orig.yaml'
 
@@ -137,8 +137,8 @@ model:
   prjection_head_layers: [256, 1024]  # hidden dim, output dim
 
   fc_layers: [32]   # prev [32]
-  lstm_hidden_size: 512
-  lstm_horizon_len: 5
+  rnn_hidden_size: 192
+  rnn_horizon_len: 5
   value_ensumble: 1
 
   policy_distribution: squashed_gaussian  # beta or squashed_gaussian or truncated_gaussian or discretized
