@@ -72,7 +72,7 @@ class OCEZCWAgent(Agent):
 
         value_policy_model = OCValuePolicyNetwork(self.slot_dim, self.latent_dim, self.n_slots,
                                                   self.config.model.value_support.size,
-                                                  self.action_space_size, is_continuous, v_num=self.config.train.v_num)
+                                                  self.action_space_size * 2, is_continuous, v_num=self.config.train.v_num)
 
         reward_output_size = self.config.model.reward_support.size
         if self.value_prefix:

@@ -193,8 +193,6 @@ class OCDynamicsNetwork(nn.Module):
                               action_dim=self.action_space_size, num_objects=self.n_slots, ignore_action=False,
                               copy_action=True, edge_actions=True)
     def forward(self, slots, action):
-        print(f'self.action_space_size = {self.action_space_size}')
-        print(f'action = {action}')
         return self.gnn(slots, action)
 
 class ValuePolicyNetwork(nn.Module):
