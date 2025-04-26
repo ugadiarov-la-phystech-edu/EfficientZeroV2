@@ -49,7 +49,6 @@ def DDP_setup(**kwargs):
 class Agent:
     def __init__(self, config):
         self.config = config
-        self.transforms = None
         self.obs_shape = None
         self.input_shape = None
         self.action_space_size = None
@@ -62,7 +61,7 @@ class Agent:
     def train(self, rank, replay_buffer, storage, batch_storage, logger):
         assert self._update
         # update image augmentation transform
-        self.update_augmentation_transform()
+        #self.update_augmentation_transform()
 
         # save path
         model_path = Path(self.config.save_path) / 'models'
@@ -414,8 +413,8 @@ class Agent:
         #         obs_batch_all = torch.cat((obs_batch_all, obs_batch_raw[:, step_i * image_channel: (step_i + n_stack) * image_channel]), dim=0)
 
         # augmentation
-        obs_batch = self.transform(obs_batch)
-        obs_target_batch = self.transform(obs_target_batch)
+        #obs_batch = self.transform(obs_batch)
+        #obs_target_batch = self.transform(obs_target_batch)
         # if self.config.train.use_decorrelation:
         #     obs_batch_aug1 = self.transform(obs_batch_all)
         #     obs_batch_aug2 = self.transform(obs_batch_all)
@@ -644,18 +643,8 @@ class Agent:
             table = wandb.Histogram(hist, num_bins=200)
             logger.log({key: table}, step_count)
 
-    def transform(self, observation):
-        if self.transforms is not None:
-            return self.transforms(observation)
-        else:
-            return observation
-
     def build_model(self):
         raise NotImplementedError
-
-    def update_augmentation_transform(self):
-        if self.config.augmentation and self.config.env.image_based:
-            self.transforms = Transforms(self.config.augmentation, image_shape=(self.obs_shape[1], self.obs_shape[2]))
 
     def get_temperature(self, trained_steps):
         if self.config.train.change_temperature:

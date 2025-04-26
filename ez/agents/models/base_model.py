@@ -115,9 +115,11 @@ class OCRepresentationNetwork(nn.Module):
         self.slate._module.load_state_dict(state_dict)
         self.slate.requires_grad_(False)
         self.slate.eval()
+        self.prev_slots = None
 
     def forward(self, x):
-        slots = self.slate._module._get_slots(x)
+        slots = self.slate._module._get_slots(x, prev_slots=self.prev_slots)
+        self.prev_slots = slots
         return slots
 
 # Predict next hidden states given current states and actions

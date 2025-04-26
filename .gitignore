@@ -24,3 +24,7 @@ ez/results
 ez/mcts/ctree/cytree.cpp
 ez/mcts/ctree_v2/cytree.cpp
 ez/mcts/ori_ctree/cytree.cpp
+
+
+ez/ocr/maniskill.ckpt
+ez/ocr/robosuite.ckpt

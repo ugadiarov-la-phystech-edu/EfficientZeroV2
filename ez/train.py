@@ -27,7 +27,6 @@ from ez.utils.format import set_seed, init_logger
 from ez.worker import start_workers, join_workers
 from ez.eval import eval
 
-
 @hydra.main(config_path='./config', config_name='config', version_base='1.1')
 def main(config):
     if config.exp_config is not None:
