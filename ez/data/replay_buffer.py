@@ -112,7 +112,7 @@ class ReplayBuffer:
             probs = np.ones_like(self.priorities)
 
         # sample the top transitions of the current buffer
-        if self.env in ['DMC', 'Gym', 'causal_world'] and len(self.priorities) > self.top_transitions:
+        if self.env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill'] and len(self.priorities) > self.top_transitions:
             idx = int(len(self.priorities) - self.top_transitions)
             probs[:idx] = 0
             self.priorities[:idx] = 0

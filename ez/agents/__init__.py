@@ -8,6 +8,8 @@ from ez.agents.ez_dmc_image import EZDMCImageAgent
 from ez.agents.ez_dmc_state import EZDMCStateAgent
 from ez.agents.ez_shapes2d import EZShapes2dAgent
 from ez.agents.ez_cw import EZCWAgent
+from ez.agents.ez_maniskill import EZManiskillAgent
+from ez.agents.ez_robosuite import EZRobosuiteAgent
 
 names = {
     'atari_agent': EZAtariAgent,
@@ -15,4 +17,6 @@ names = {
     'dmc_state_agent': EZDMCStateAgent,
     'shapes2d_agent': EZShapes2dAgent,
     'cw_agent': EZCWAgent,
+    'robosuite_agent': EZRobosuiteAgent,
+    'maniskill_agent': EZManiskillAgent,
 }

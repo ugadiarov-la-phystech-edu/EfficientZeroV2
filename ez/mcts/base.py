@@ -53,7 +53,7 @@ class MCTS:
         raise NotImplementedError()
 
     def sample_mpc_actions(self, policy):
-        is_continuous = (self.env in ['DMC', 'Gym', 'causal_world'])
+        is_continuous = (self.env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill'])
         if is_continuous:
             action_dim = policy.shape[-1] // 2
             mean = policy[:, :action_dim]

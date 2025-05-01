@@ -100,7 +100,7 @@ class DiscreteSupport(object):
         if config:
             # assert min < max
             self.env = config.env.env
-            if self.env in ['DMC', 'Gym', 'causal_world']:
+            if self.env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill']:
                 assert config.model.reward_support.bins == config.model.value_support.bins
                 self.size = config.model.reward_support.bins
             else:
@@ -124,7 +124,7 @@ class DiscreteSupport(object):
 
         epsilon = 0.001
 
-        if env in ['DMC', 'Gym', 'causal_world']:
+        if env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill']:
             x_min = transform_one(x_min)
             x_max = transform_one(x_max)
             bins = kwargs['bins']
@@ -179,7 +179,7 @@ class DiscreteSupport(object):
         env = kwargs['env']
         epsilon = 0.001
 
-        if env in ['DMC', 'Gym', 'causal_world']:
+        if env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill']:
             x_min = transform_one(x_min)
             x_max = transform_one(x_max)
             bins = kwargs['bins']

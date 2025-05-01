@@ -11,10 +11,12 @@ from ez.utils.format import arr_to_str
 from ez.envs.shapes2d import shapes2d
 from omegaconf import OmegaConf
 from ez.envs.causal_world.cw_envs import CwTargetEnv
+from ez.envs.maniskill3 import ManiSkill
+from ez.envs.robosuite import RobosuiteEnv
 
 
 def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
-    assert game_setting in ['Atari', 'DMC', 'Gym', 'Shapes2d', 'causal_world']
+    assert game_setting in ['Atari', 'DMC', 'Gym', 'Shapes2d', 'causal_world', 'robosuite', 'maniskill']
     if game_setting == 'Atari':
         _env_fn = make_atari
     elif game_setting == 'Gym':
@@ -26,6 +28,10 @@ def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs)
     elif game_setting == 'causal_world':
         _env_fn = make_causal_world
         env_setting = 'ez/envs/causal_world/cw_envs/config/reaching-hard_orig.yaml'
+    elif game_setting == 'robosuite':
+        _env_fn = make_robosuite
+    elif game_setting == 'maniskill':
+        _env_fn = make_maniskill
     else:
         raise NotImplementedError()
 
@@ -37,6 +43,8 @@ def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs)
                         seed=i + seed,
                         # seed=seed,
                         save_path=save_path, **kwargs) for i in range(num_envs)]
+    elif game_setting == 'maniskill':
+        envs = [_env_fn(**kwargs) for i in range(num_envs)]
     else:
         envs = [_env_fn(game_name,
                         seed=i + seed,
@@ -47,7 +55,7 @@ def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs)
 
 
 def make_env(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
-    assert game_setting in ['Atari', 'DMC', 'Gym', 'Shapes2d', 'causal_world']
+    assert game_setting in ['Atari', 'DMC', 'Gym', 'Shapes2d', 'causal_world', 'robosuite', 'maniskill']
     if game_setting == 'Atari':
         _env_fn = make_atari
     elif game_setting == 'Gym':
@@ -59,6 +67,10 @@ def make_env(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
     elif game_setting == 'causal_world':
         _env_fn = make_causal_world
         env_setting = 'ez/envs/causal_world/cw_envs/config/reaching-hard_orig.yaml'
+    elif game_setting == 'robosuite':
+        _env_fn = make_robosuite
+    elif game_setting == 'maniskill':
+        _env_fn = make_maniskill
     else:
         raise NotImplementedError()
 
@@ -66,6 +78,8 @@ def make_env(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
 
     if game_setting == 'causal_world':
         env = _env_fn(env_setting, seed=seed, save_path=save_path, **kwargs)
+    elif game_setting == 'maniksill':
+        env = _env_fn(**kwargs)
     else:
         env = _env_fn(game_name, seed=seed, save_path=save_path, **kwargs)
 
@@ -239,6 +253,40 @@ def make_causal_world(env_config_path, seed, save_path=None, **kwargs):
     env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
 
     env = TimeLimit(env, env.unwrapped._max_episode_length)
+
+    env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
+    return env
+
+def make_robosuite(game_name, seed, save_path=None, **kwargs):
+
+    clip_reward = kwargs.get('clip_reward')
+    obs_to_string = kwargs.get('obs_to_string')
+    max_episode_steps = kwargs['max_episode_steps']
+    obs_shape = kwargs['obs_shape']
+    gray_scale = kwargs.get('gray_scale')
+
+    env = RobosuiteEnv(task=game_name, horizon=max_episode_steps, seed=seed)
+
+    env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
+
+    env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
+    return env
+
+def make_maniskill(**kwargs):
+
+    clip_reward = kwargs.get('clip_reward')
+    obs_to_string = kwargs.get('obs_to_string')
+    max_episode_steps = kwargs['max_episode_steps']
+    obs_shape = kwargs['obs_shape']
+    gray_scale = kwargs.get('gray_scale')
+
+    env = ManiSkill(reward_mode='normalized_dense', image_size=224)
+
+    env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
+
+    env = TimeLimit(env, max_episode_steps=max_episode_steps)
+
+    env = FailOnTimelimitWrapper(env)
 
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
     return env
