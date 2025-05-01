@@ -133,7 +133,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
                 )
 
         # step action in environments
-        if self.config.env.env == 'maniskill':
+        if config.env.env == 'maniskill':
             best_actions = best_actions.astype(np.float32)
         for i in range(n_episodes):
             if dones[i]:
