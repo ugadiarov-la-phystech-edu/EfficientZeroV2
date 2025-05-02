@@ -194,3 +194,14 @@ class DMC_Obs_Wrapper(gym.ObservationWrapper):
     def observation(self, obs):
         obs = np.moveaxis(obs, 0, -1)
         return obs
+
+class FailOnTimelimitWrapper(gym.Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def step(self, action):
+        observation, reward, done, info = super().step(action)
+        if done and 'is_success' not in info:
+            info['is_success'] = False
+
+        return observation, reward, done, info

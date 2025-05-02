@@ -10,6 +10,8 @@ from ez.agents.ez_shapes2d import EZShapes2dAgent
 from ez.agents.ocez_shapes2d import OCEZShapes2dAgent
 from ez.agents.ez_cw import EZCWAgent
 from ez.agents.ocez_cw import OCEZCWAgent
+from ez.agents.ocez_maniskill import OCEZManiskillAgent
+from ez.agents.ocez_robosuite import OCEZRobosuiteAgent
 
 names = {
     'atari_agent': EZAtariAgent,
@@ -18,5 +20,7 @@ names = {
     'shapes2d_agent': EZShapes2dAgent,
     'oc_shapes2d_agent': OCEZShapes2dAgent,
     'cw_agent': EZCWAgent,
-    'occw_agent': OCEZCWAgent,
+    'oc_cw_agent': OCEZCWAgent,
+    'oc_maniskill_agent': OCEZManiskillAgent,
+    'oc_robosuite_agent': OCEZRobosuiteAgent,
 }

@@ -135,6 +135,8 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
                 )
 
         # step action in environments
+        if config.env.env == 'maniskill':
+            best_actions = best_actions.astype(np.float32)
         for i in range(n_episodes):
             if dones[i]:
                 continue
@@ -145,7 +147,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             # rewards[i].append(reward)
             rewards[i].append(info['raw_reward'])
             dones[i] = done
-            if config.env.env in ['Shapes2d', 'causal_world']:
+            if config.env.env in ['Shapes2d', 'causal_world', 'maniskill']:
                 if info['is_success'] and dones[i]:
                     success_rate+=1/n_episodes
 
@@ -159,6 +161,10 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
                 game_trajs[i].snapshot_lst.append(envs[i].clone_full_state())
             elif config.env.env == 'causal_world':
                 game_trajs[i].snapshot_lst.append(envs[i].get_state())
+            elif config.env.env == 'robosuite':
+                game_trajs[i].snapshot_lst.append(envs[i].render())
+            elif config.env.env == 'maniskill':
+                game_trajs[i].snapshot_lst.append(envs[i].last_observation())
             else:
                 game_trajs[i].snapshot_lst.append(envs[i].physics.get_state())
 

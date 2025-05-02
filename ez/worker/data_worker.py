@@ -145,6 +145,8 @@ class DataWorker(Worker):
                     )
 
             # step action in environments
+            if self.config.env.env == 'maniskill':
+                best_actions = best_actions.astype(np.float32)
             for i in range(num_envs):
                 action = best_actions[i]
                 obs, reward, done, info = envs[i].step(action)

@@ -1,20 +1,19 @@
 # agent
-agent_name: oc_cw_agent
+agent_name: oc_robosuite_agent
 
 # env setting
 env:
-  env: causal_world
-  game: reaching
+  env: robosuite
+  game: Lift
   base_seed: 0
   n_skip: 0
   n_stack: 1
-  max_episode_steps: 1000
+  max_episode_steps: 10
   gray_scale: False
   image_based: True
   clip_reward: False
-  obs_shape: [3, 64, 64]
+  obs_shape: [3, 224, 224]
   episodic: True
-  setting: 'ez/envs/causal_world/cw_envs/config/reaching-hard_orig.yaml'
 
 rl:
   discount: 0.99
@@ -45,19 +44,19 @@ priority:
 # training
 train:
   load_model_path: ''
-  batch_size: 256
-  training_steps: 200000        # 100 * 1000
-  offline_training_steps: 20000     # 20 * 1000
-  start_transitions: 2000       # 2 * 1000
+  batch_size: 2
+  training_steps: 10000        # 100 * 1000
+  offline_training_steps: 10     # 20 * 1000
+  start_transitions: 10       # 2 * 1000
 
-  eval_n_episode: 10
+  eval_n_episode: 1
   eval_interval: 5000
 
-  self_play_update_interval: 100
-  reanalyze_update_interval: 200
+  self_play_update_interval: 5
+  reanalyze_update_interval: 5
   save_ckpt_interval: 10000
 
-  mini_batch_size: 256
+  mini_batch_size: 2
   reanalyze_ratio: 1.0
 
   consistency_loss: 'mse'
@@ -87,18 +86,18 @@ train:
 
 # self-play data collection
 data:
-  num_envs: 4
-  buffer_size: 200000      # 1 * 1000 * 1000
+  num_envs: 2
+  buffer_size: 1000      # 1 * 1000 * 1000
   total_transitions: 200000 # 1000 * 1000
   top_transitions: 2e5
-  trajectory_size: 100   # prev 500
+  trajectory_size: 10   # prev 500
   save_video: False
   save_as_dataset: False
 
 # MCTS
 mcts:
   language: cython
-  num_simulations: 32   # prev 8
+  num_simulations: 2   # prev 8
   num_top_actions: 16  # prev 4
   num_sampled_actions: 16
   c_visit: 50
@@ -110,11 +109,15 @@ mcts:
   std_magnification: 3
 
 oc:
-  ocr_config_path: 'ez/ocr/slate/config/slate_3d.yaml'
-  checkpoint_path: 'ez/ocr/slate_weights/slate_3d.pth'
-  n_slots: 10
-  slot_dim: 192
+  ocr_config_path: None
+  checkpoint_path: 'ez/ocr/robosuite.ckpt'
+  n_slots: 5
+  slot_dim: 64
   latent_dim: 512
+  model_name: 'vit_base_patch16_224_dino'
+  input_feature_dim: 768
+  num_patches: 196
+  features: (2048, 2048, 2048)
 
 # model architecture
 model:
@@ -137,7 +140,7 @@ model:
   prjection_head_layers: [256, 1024]  # hidden dim, output dim
 
   fc_layers: [32]   # prev [32]
-  rnn_hidden_size: 192
+  rnn_hidden_size: 64
   rnn_horizon_len: 5
   value_ensumble: 1
 
@@ -150,23 +153,23 @@ model:
   reward_support:
     range: [-2, 2]
     scale: 0.01
-    env: causal_world
+    env: robosuite
     bins: 51
     type: support   # support or symlog
   value_support:
     range: [-299, 299]
     scale: 0.5
-    env: causal_world
+    env: robosuite
     bins: 51
     type: support   # support or symlog
 
 # worker process allocation
 actors:
-  data_worker: 2
-  batch_worker: 8
+  data_worker: 1
+  batch_worker: 1
 
 # wandb
 wandb:
   project: 'ez-v2-release'
-  tag: 'causal_world'
-  debug: False
+  tag: 'robosuite'
+  debug: True

@@ -1,20 +1,19 @@
 # agent
-agent_name: oc_cw_agent
+agent_name: oc_robosuite_agent
 
 # env setting
 env:
-  env: causal_world
-  game: reaching
+  env: robosuite
+  game: Lift
   base_seed: 0
   n_skip: 0
   n_stack: 1
-  max_episode_steps: 1000
+  max_episode_steps: 125
   gray_scale: False
   image_based: True
   clip_reward: False
-  obs_shape: [3, 64, 64]
+  obs_shape: [3, 224, 224]
   episodic: True
-  setting: 'ez/envs/causal_world/cw_envs/config/reaching-hard_orig.yaml'
 
 rl:
   discount: 0.99
@@ -110,11 +109,15 @@ mcts:
   std_magnification: 3
 
 oc:
-  ocr_config_path: 'ez/ocr/slate/config/slate_3d.yaml'
-  checkpoint_path: 'ez/ocr/slate_weights/slate_3d.pth'
-  n_slots: 10
-  slot_dim: 192
+  ocr_config_path: None
+  checkpoint_path: 'ez/ocr/robosuite.ckpt'
+  n_slots: 5
+  slot_dim: 64
   latent_dim: 512
+  model_name: 'vit_base_patch16_224_dino'
+  input_feature_dim: 768
+  num_patches: 196
+  features: (2048, 2048, 2048)
 
 # model architecture
 model:
@@ -150,13 +153,13 @@ model:
   reward_support:
     range: [-2, 2]
     scale: 0.01
-    env: causal_world
+    env: robosuite
     bins: 51
     type: support   # support or symlog
   value_support:
     range: [-299, 299]
     scale: 0.5
-    env: causal_world
+    env: robosuite
     bins: 51
     type: support   # support or symlog
 
@@ -168,5 +171,5 @@ actors:
 # wandb
 wandb:
   project: 'ez-v2-release'
-  tag: 'causal_world'
+  tag: 'robosuite'
   debug: False

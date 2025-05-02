@@ -66,7 +66,7 @@ class OCEZCWAgent(Agent):
     def build_model(self):
         is_continuous = (self.config.env.env == "causal_world")
 
-        representation_model = OCRepresentationNetwork(self.slate_config, self.obs_shape[2], self.slate_weights)
+        representation_model = OCRepresentationNetworkSLATE(self.slate_config, self.obs_shape[2], self.slate_weights)
 
         dynamics_model = OCDynamicsNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots)
 

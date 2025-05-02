@@ -11,8 +11,22 @@ from .layer import ResidualBlock, GNN, conv3x3, mlp
 from omegaconf import OmegaConf
 from collections import namedtuple
 from ez.ocr.slate.slate import SLATE
-from ez.ocr.tools import obs_to_tensor
+from ez.ocr.tools import obs_to_tensor, Dinosaur
 
+
+
+def load_slot_extractor_dinosaur(n_slots, slot_dim, model_name, input_feature_dim, num_patches, features, checkpoint_path):
+    dinosaur = Dinosaur(dino_model_name=model_name, n_slots=n_slots, slot_dim=slot_dim,
+                        intput_feature_dim=input_feature_dim, num_patches=num_patches, features=features)
+
+    state_dict = torch.load(checkpoint_path)['state_dict']
+    state_dict = {key[len('models.'):]: value for key, value in state_dict.items()}
+
+    dinosaur.load_state_dict(state_dict)
+    dinosaur = dinosaur.eval()
+    dinosaur.requires_grad_(False)
+
+    return dinosaur
 
 # Down_sample observations before representation network (See paper appendix Network Architecture)
 class DownSample(nn.Module):
@@ -102,7 +116,7 @@ class RepresentationNetwork(nn.Module):
             x = block(x)
         return x
 
-class OCRepresentationNetwork(nn.Module):
+class OCRepresentationNetworkSLATE(nn.Module):
     def __init__(self, ocr_config_path, obs_size, checkpoint_path):
         super().__init__()
         self.ocr_config_path = ocr_config_path
@@ -119,6 +133,27 @@ class OCRepresentationNetwork(nn.Module):
 
     def forward(self, x):
         slots = self.slate._module._get_slots(x, prev_slots=self.prev_slots)
+        self.prev_slots = slots
+        return slots
+
+class OCRepresentationNetworkDINOSAUR(nn.Module):
+    def __init__(self, n_slots, slot_dim, model_name, input_feature_dim, num_patches, features, checkpoint_path):
+        super().__init__()
+        self.n_slots = n_slots
+        self.slot_dim = slot_dim
+        self.model_name = model_name
+        self.input_feature_dim = input_feature_dim
+        self.num_patches = num_patches
+        self.features = features
+        self.device = 'cuda'
+        self.dinosaur = load_slot_extractor_dinosaur(self.n_slots, self.slot_dim, self.model_name,
+                                                     self.input_feature_dim, self.num_patches, self.features,  checkpoint_path=checkpoint_path)
+        self.dinosaur.to(self.device)
+        self.prev_slots = None
+
+    def forward(self, x):
+        obs = obs_to_tensor(x[np.newaxis], device=self.device)
+        slots = self.dinosaur(obs, prev_slots=self.prev_slots)
         self.prev_slots = slots
         return slots
 
