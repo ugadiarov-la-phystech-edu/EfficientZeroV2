@@ -117,7 +117,7 @@ oc:
   model_name: 'vit_base_patch16_224_dino'
   input_feature_dim: 768
   num_patches: 196
-  features: (2048, 2048, 2048)
+  features: 2048
 
 # model architecture
 model:

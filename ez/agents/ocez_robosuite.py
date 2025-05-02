@@ -30,7 +30,7 @@ class OCEZRobosuiteAgent(Agent):
         self.model_name = self.config.oc.model_name
         self.input_feature_dim = self.config.oc.input_feature_dim
         self.num_patches = self.config.oc.num_patches
-        self.features = self.config.oc.features
+        self.features = (self.config.oc.features, self.config.oc.features, self.config.oc.features)
         self.latent_dim = self.config.oc.latent_dim
 
     def update_config(self):

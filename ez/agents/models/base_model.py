@@ -145,15 +145,12 @@ class OCRepresentationNetworkDINOSAUR(nn.Module):
         self.input_feature_dim = input_feature_dim
         self.num_patches = num_patches
         self.features = features
-        self.device = 'cuda'
         self.dinosaur = load_slot_extractor_dinosaur(self.n_slots, self.slot_dim, self.model_name,
                                                      self.input_feature_dim, self.num_patches, self.features,  checkpoint_path=checkpoint_path)
-        self.dinosaur.to(self.device)
         self.prev_slots = None
 
     def forward(self, x):
-        obs = obs_to_tensor(x[np.newaxis], device=self.device)
-        slots = self.dinosaur(obs, prev_slots=self.prev_slots)
+        slots = self.dinosaur(x, prev_slots=self.prev_slots)
         self.prev_slots = slots
         return slots
 
