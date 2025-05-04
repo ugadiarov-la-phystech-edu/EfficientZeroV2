@@ -68,7 +68,7 @@ train:
   off_diag_coeff: 5e-3
   entropy_coeff: 5e-3
 
-  max_grad_norm: 5
+  max_grad_norm: 0.5
   change_temperature: True
 
   periodic_reset: False
@@ -140,7 +140,7 @@ model:
   prjection_head_layers: [256, 1024]  # hidden dim, output dim
 
   fc_layers: [32]   # prev [32]
-  rnn_hidden_size: 192
+  rnn_hidden_size: 128
   rnn_horizon_len: 5
   value_ensumble: 1
 

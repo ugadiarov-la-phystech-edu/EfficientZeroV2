@@ -68,7 +68,7 @@ train:
   off_diag_coeff: 5e-3
   entropy_coeff: 5e-3
 
-  max_grad_norm: 5
+  max_grad_norm: 0.5
   change_temperature: True
 
   periodic_reset: False

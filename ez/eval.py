@@ -95,6 +95,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
     step = 0
     frames = [[] for _ in range(n_episodes)]
     rewards = [[] for _ in range(n_episodes)]
+    episode_len = [0 for _ in range(n_episodes)]
     while not dones.all():
         # debug
         if verbose:
@@ -147,6 +148,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             # rewards[i].append(reward)
             rewards[i].append(info['raw_reward'])
             dones[i] = done
+            episode_len[i]+=1
             if config.env.env in ['Shapes2d', 'causal_world', 'maniskill']:
                 if info['is_success'] and dones[i]:
                     success_rate+=1/n_episodes
@@ -181,6 +183,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
                                          ep_ori_rewards.mean(), ep_ori_rewards.max(), ep_ori_rewards.min()))
             pb.update(1)
 
+    episode_len = sum(episode_len)/n_episodes
     [env.close() for env in envs]
     for i in range(n_episodes):
         writer = imageio.get_writer(video_path / f'epi_{i}_{max_steps}.mp4')
@@ -200,7 +203,7 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
             j += 1
         writer.close()
 
-    return ep_ori_rewards, success_rate
+    return ep_ori_rewards, success_rate, episode_len
 
 
 

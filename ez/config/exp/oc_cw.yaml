@@ -50,7 +50,7 @@ train:
   offline_training_steps: 20000     # 20 * 1000
   start_transitions: 2000       # 2 * 1000
 
-  eval_n_episode: 10
+  eval_n_episode: 100
   eval_interval: 5000
 
   self_play_update_interval: 100
@@ -69,7 +69,7 @@ train:
   off_diag_coeff: 5e-3
   entropy_coeff: 5e-3
 
-  max_grad_norm: 5
+  max_grad_norm: 0.5
   change_temperature: True
 
   periodic_reset: False
