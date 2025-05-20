@@ -215,11 +215,11 @@ class Agent:
 
                 model.eval()
 
-                save_path = Path(self.config.save_path) / 'evaluation' / 'step_{}'.format(step_count)
-                save_path.mkdir(parents=True, exist_ok=True)
-                model_path = Path(self.config.save_path) / 'model.p'
+                eval_save_path = Path(self.config.save_path) / 'evaluation' / 'step_{}'.format(step_count)
+                eval_save_path.mkdir(parents=True, exist_ok=True)
+                eval_model_path = Path(self.config.save_path) / 'model.p'
 
-                eval_score, success_rate, episode_len = eval(self, model, self.config.train.eval_n_episode, save_path, self.config,
+                eval_score, success_rate, episode_len = eval(self, model, self.config.train.eval_n_episode, eval_save_path, self.config,
                                        max_steps=self.config.env.max_episode_steps, use_pb=False, verbose=0)
                 mean_score = eval_score.mean()
                 std_score = eval_score.std()
@@ -229,7 +229,7 @@ class Agent:
                 if mean_score >= best_eval_score:
                     best_eval_score = mean_score
                     storage.set_best_score.remote(best_eval_score)
-                    torch.save(model.state_dict(), model_path)
+                    torch.save(model.state_dict(), eval_model_path)
 
                 storage.set_eval_counter.remote(step_count)
                 storage.add_eval_log_scalar.remote({
