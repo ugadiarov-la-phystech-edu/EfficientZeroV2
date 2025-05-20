@@ -60,21 +60,23 @@ def start_workers(agent, manager, config):
                      for rank in range(0, config.actors.batch_worker)]
     print('[main process] Batch workers have all been launched.')
 
-    # eval worker
-    eval_worker = [start_eval_worker(agent, replay_buffer_server, storage_server, config)]
+    # eval worker - disabled
+    # eval_worker = [start_eval_worker(agent, replay_buffer_server, storage_server, config)]
 
     if int(torch.__version__[0]) == 2:
         print(f'[main process] torch version is {torch.__version__}, enabled torch_compile.')
 
     # trainer (in current process)
-    worker_lst = [data_workers, batch_workers, eval_worker]
+    # worker_lst = [data_workers, batch_workers, eval_worker]
+    worker_lst = [data_workers, batch_workers]
     server_lst = [storage_server, replay_buffer_server, watchdog_server, batch_storage]
 
     return worker_lst, server_lst
 
 
 def join_workers(worker_lst, server_lst):
-    data_workers, batch_workers, eval_worker = worker_lst
+    #data_workers, batch_workers, eval_worker = worker_lst
+    data_workers, batch_workers = worker_lst
     storage_server, replay_buffer_server, watchdog_server, smos_server = server_lst
 
     # wait for all workers to finish
@@ -82,7 +84,7 @@ def join_workers(worker_lst, server_lst):
         data_worker.join()
     for batch_worker in batch_workers:
         batch_worker.join()
-    eval_worker.join()
+    # eval_worker.join()
     print(f'[main process] All workers have stopped.')
 
     # stop servers

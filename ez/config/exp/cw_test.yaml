@@ -51,7 +51,7 @@ train:
   start_transitions: 10       # 2 * 1000
 
   eval_n_episode: 1
-  eval_interval: 5000
+  eval_interval: 5
 
   self_play_update_interval: 5
   reanalyze_update_interval: 5
