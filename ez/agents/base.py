@@ -79,6 +79,7 @@ class Agent:
         # prepare model
         model = self.build_model().cuda()
         target_model = self.build_model().cuda()
+        eval_model = self.build_model().cuda()
         # load model
         load_path = self.config.resume.load_path
         if os.path.exists(load_path):
@@ -95,6 +96,7 @@ class Agent:
             storage.set_weights.remote(weights, 'latest')
             model.load_state_dict(weights)
             target_model.load_state_dict(weights)
+            eval_model.load_state_dict(weights)
 
         # DDP
         if self.use_ddp:
@@ -103,8 +105,10 @@ class Agent:
         if int(torch.__version__[0]) == 2:
             model = torch.compile(model)
             target_model = torch.compile(target_model)
+            eval_model = torch.compile(eval_model)
         model.train()
         target_model.eval()
+        eval_model.eval()
 
         # optimizer
         if self.config.optimizer.type == 'SGD':
@@ -213,13 +217,14 @@ class Agent:
                 from ez.eval import eval
                 print('[Eval] Start evaluation at step {}.'.format(step_count))
 
-                model.eval()
+                eval_model.set_weights(ray.get(storage.get_weights.remote('self_play')))
+                eval_model.eval()
 
                 eval_save_path = Path(self.config.save_path) / 'evaluation' / 'step_{}'.format(step_count)
                 eval_save_path.mkdir(parents=True, exist_ok=True)
                 eval_model_path = Path(self.config.save_path) / 'model.p'
 
-                eval_score, success_rate, episode_len = eval(self, model, self.config.train.eval_n_episode, eval_save_path, self.config,
+                eval_score, success_rate, episode_len = eval(self, eval_model, self.config.train.eval_n_episode, eval_save_path, self.config,
                                        max_steps=self.config.env.max_episode_steps, use_pb=False, verbose=0)
                 mean_score = eval_score.mean()
                 std_score = eval_score.std()
@@ -229,7 +234,7 @@ class Agent:
                 if mean_score >= best_eval_score:
                     best_eval_score = mean_score
                     storage.set_best_score.remote(best_eval_score)
-                    torch.save(model.state_dict(), eval_model_path)
+                    torch.save(eval_model.state_dict(), eval_model_path)
 
                 storage.set_eval_counter.remote(step_count)
                 storage.add_eval_log_scalar.remote({
