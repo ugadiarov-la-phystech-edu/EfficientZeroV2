@@ -78,6 +78,7 @@ class Agent:
         # prepare model
         model = self.build_model().cuda()
         target_model = self.build_model().cuda()
+        eval_model = self.build_model().cuda()
         # load model
         load_path = self.config.resume.load_path
         if os.path.exists(load_path):
@@ -94,6 +95,7 @@ class Agent:
             storage.set_weights.remote(weights, 'latest')
             model.load_state_dict(weights)
             target_model.load_state_dict(weights)
+            eval_model.load_state_dict(weights)
 
         # DDP
         if self.use_ddp:
@@ -102,8 +104,10 @@ class Agent:
         if int(torch.__version__[0]) == 2:
             model = torch.compile(model)
             target_model = torch.compile(target_model)
+            eval_model = torch.compile(eval_model)
         model.train()
         target_model.eval()
+        eval_model.eval()
 
         # optimizer
         if self.config.optimizer.type == 'SGD':
@@ -173,6 +177,7 @@ class Agent:
         eval_score, eval_best_score = 0., 0.
         prev_eval_counter = -1
         eval_counter = 0
+        best_eval_score = float('-inf')
 
         while not self.is_finished(step_count):
             start_time = time.time()
@@ -208,9 +213,37 @@ class Agent:
                 recent_weights = self.get_weights(model)
 
             if step_count % self.config.train.eval_interval == 0:
-                if eval_counter == prev_eval_counter:
-                    time.sleep(1)
-                    continue
+                from ez.eval import eval
+                print('[Eval] Start evaluation at step {}.'.format(step_count))
+
+                eval_model.set_weights(ray.get(storage.get_weights.remote('self_play')))
+                eval_model.eval()
+
+                eval_save_path = Path(self.config.save_path) / 'evaluation' / 'step_{}'.format(step_count)
+                eval_save_path.mkdir(parents=True, exist_ok=True)
+                eval_model_path = Path(self.config.save_path) / 'model.p'
+
+                eval_score, success_rate, episode_len = eval(self, eval_model, self.config.train.eval_n_episode, eval_save_path, self.config,
+                                       max_steps=self.config.env.max_episode_steps, use_pb=False, verbose=0)
+                mean_score = eval_score.mean()
+                std_score = eval_score.std()
+                min_score = eval_score.min()
+                max_score = eval_score.max()
+
+                if mean_score >= best_eval_score:
+                    best_eval_score = mean_score
+                    storage.set_best_score.remote(best_eval_score)
+                    torch.save(eval_model.state_dict(), eval_model_path)
+
+                storage.set_eval_counter.remote(step_count)
+                storage.add_eval_log_scalar.remote({
+                    'eval/mean_score': mean_score,
+                    'eval/std_score': std_score,
+                    'eval/max_score': max_score,
+                    'eval/min_score': min_score,
+                    'eval/success_rate': success_rate,
+                    'eval/mean_episode_len': episode_len
+                })
 
             scalers, log_data = self.update_weights(model, batch, optimizer, replay_buffer, scaler, step_count, target_model=target_model)
             scaler = scalers[0]
