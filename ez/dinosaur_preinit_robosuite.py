@@ -65,6 +65,5 @@ if __name__ == '__main__':
         prev_slots = slots[-1]
 
     for i, sample in enumerate(samples):
-        plt.imshow(sample[0])
         if i == len(samples)-1:
-            plt.savefig(f"sample_{i}.png")
+            cv2.imwrite(f'robosuite.png', cv2.cvtColor(sample[0], cv2.COLOR_RGB2BGR))
