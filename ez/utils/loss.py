@@ -20,7 +20,7 @@ def cosine_similarity_loss(f1, f2):
     """
     f1 = F.normalize(f1, p=2., dim=-1, eps=1e-5)
     f2 = F.normalize(f2, p=2., dim=-1, eps=1e-5)
-    cosine_sim = (f1 * f2).sum(dim=1)
+    cosine_sim = (f1 * f2).sum(dim=-1)
     return -cosine_sim.mean(dim=1)
 
 # def cosine_similarity_loss(f1, f2):
