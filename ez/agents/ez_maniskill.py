@@ -35,7 +35,7 @@ class EZManiskillAgent(Agent):
     def update_config(self):
         assert not self._update
 
-        env = make_maniskill(**self.config.env)
+        env = make_maniskill(seed = 0, **self.config.env)
         action_space_size = env.action_space.shape[0]
 
         obs_channel = 1 if self.config.env.gray_scale else 3
