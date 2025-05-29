@@ -6,6 +6,7 @@ import torch
 from PIL import Image
 from PIL.Image import Resampling
 from omegaconf import OmegaConf
+import cv2
 
 from ocr.slate.slate import SLATE
 from ocr.tools import obs_to_tensor
@@ -34,3 +35,4 @@ if __name__ == '__main__':
     viz = slate._module.get_samples(image_tensor)
     plt.imshow(viz['samples'][0])
     plt.show()
+    cv2.imwrite(f'shapes2d.png', cv2.cvtColor(viz['samples'][0], cv2.COLOR_RGB2BGR))

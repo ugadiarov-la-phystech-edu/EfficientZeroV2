@@ -44,7 +44,7 @@ def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs)
                         # seed=seed,
                         save_path=save_path, **kwargs) for i in range(num_envs)]
     elif game_setting == 'maniskill':
-        envs = [_env_fn(**kwargs) for i in range(num_envs)]
+        envs = [_env_fn(seed=i + seed, **kwargs) for i in range(num_envs)]
     else:
         envs = [_env_fn(game_name,
                         seed=i + seed,
@@ -79,7 +79,7 @@ def make_env(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
     if game_setting == 'causal_world':
         env = _env_fn(env_setting, seed=seed, save_path=save_path, **kwargs)
     elif game_setting == 'maniksill':
-        env = _env_fn(**kwargs)
+        env = _env_fn(seed = seed, **kwargs)
     else:
         env = _env_fn(game_name, seed=seed, save_path=save_path, **kwargs)
 
@@ -272,7 +272,7 @@ def make_robosuite(game_name, seed, save_path=None, **kwargs):
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
     return env
 
-def make_maniskill(**kwargs):
+def make_maniskill(seed, **kwargs):
 
     clip_reward = kwargs.get('clip_reward')
     obs_to_string = kwargs.get('obs_to_string')
@@ -280,6 +280,8 @@ def make_maniskill(**kwargs):
     obs_shape = kwargs['obs_shape']
 
     env = ManiSkill(reward_mode='normalized_dense', image_size=obs_shape[2])
+
+    env.seed(seed)
 
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 

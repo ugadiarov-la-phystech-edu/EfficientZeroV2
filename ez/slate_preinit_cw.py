@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from gym.wrappers import TimeLimit
 from omegaconf import OmegaConf
+import cv2
 
 from envs.causal_world.cw_envs import CwTargetEnv
 from ocr.slate.slate import SLATE
@@ -41,5 +42,5 @@ if __name__ == '__main__':
         prev_slots = slots[-1]
 
     for i, sample in enumerate(samples):
-        plt.imshow(sample['samples'][0])
-        plt.savefig(f"sample_{i}.png")
+        if i == len(samples)-1:
+            cv2.imwrite(f'causal_world.png', cv2.cvtColor(sample[0], cv2.COLOR_RGB2BGR))
