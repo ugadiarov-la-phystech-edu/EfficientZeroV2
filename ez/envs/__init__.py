@@ -35,7 +35,11 @@ def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs)
     else:
         raise NotImplementedError()
 
-    if game_setting in ['DMC', 'robosuite']:
+#TODO modify like this? or not
+#    if game_setting in ['DMC', 'robosuite']:
+#        seed = random.randint(1, 1000)
+
+    if game_setting in ['DMC']:
         seed = random.randint(1, 1000)
 
     if game_setting == 'causal_world':
