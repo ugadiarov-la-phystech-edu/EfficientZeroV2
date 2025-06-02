@@ -129,11 +129,9 @@ class OCRepresentationNetworkSLATE(nn.Module):
         self.slate._module.load_state_dict(state_dict)
         self.slate.requires_grad_(False)
         self.slate.eval()
-        self.prev_slots = None
 
-    def forward(self, x):
-        slots = self.slate._module._get_slots(x, prev_slots=self.prev_slots)
-        self.prev_slots = slots
+    def forward(self, x, prev_slots = None):
+        slots = self.slate._module._get_slots(x, prev_slots=prev_slots)
         return slots
 
 class OCRepresentationNetworkDINOSAUR(nn.Module):
@@ -147,11 +145,9 @@ class OCRepresentationNetworkDINOSAUR(nn.Module):
         self.features = features
         self.dinosaur = load_slot_extractor_dinosaur(self.n_slots, self.slot_dim, self.model_name,
                                                      self.input_feature_dim, self.num_patches, self.features,  checkpoint_path=checkpoint_path)
-        self.prev_slots = None
 
-    def forward(self, x):
-        slots = self.dinosaur(x, prev_slots=self.prev_slots)
-        self.prev_slots = slots
+    def forward(self, x, prev_slots = None):
+        slots = self.dinosaur(x, prev_slots=prev_slots)
         return slots
 
 # Predict next hidden states given current states and actions

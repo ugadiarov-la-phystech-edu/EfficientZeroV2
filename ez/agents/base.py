@@ -477,6 +477,7 @@ class Agent:
 
         with autocast():
             states, values, policies = model.initial_inference(obs_batch, training=True)
+        prev_slots = copy.deepcopy(states)
 
         if self.config.model.value_support.type == 'symlog':
             scaled_value = symexp(values).min(0)[0]
@@ -542,7 +543,8 @@ class Agent:
 
                 beg_index = image_channel * step_i
                 end_index = image_channel * (step_i + n_stack)
-                gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index])
+                gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index], prev_slots)
+                prev_slots = copy.deepcopy(gt_next_states)
                 # projection for consistency
                 dynamic_states_proj = model.do_projection(states, with_grad=True)
                 gt_states_proj = model.do_projection(gt_next_states, with_grad=False)

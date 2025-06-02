@@ -53,8 +53,8 @@ class EfficientZero(nn.Module):
         self.value_prefix = kwargs.get('value_prefix')
         self.v_num = config.train.v_num
 
-    def do_representation(self, obs):
-        state = self.representation_model(obs)
+    def do_representation(self, obs, prev_slots = None):
+        state = self.representation_model(obs, prev_slots)
         if self.state_norm:
             state = normalize_state(state)
 
