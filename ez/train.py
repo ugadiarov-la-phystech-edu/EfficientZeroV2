@@ -121,8 +121,8 @@ def train(rank, agent, manager, logger, config):
         time.sleep(1)
         final_weights, final_model = ray.get(train_workers)
 
-    epi_scores = eval(agent, final_model, 10, Path(config.save_path) / 'evaluation' / 'final', config,
-                           max_steps=27000, use_pb=False, verbose=config.eval.verbose)
+    epi_scores, _, _ = eval(agent, final_model, config.train.eval_n_episode, Path(config.save_path) / 'evaluation' / 'final', config,
+                           max_steps=config.env.max_episode_steps, use_pb=False, verbose=config.eval.verbose)
     print(f'final_mean_score={epi_scores.mean():.3f}')
 
     # join process
