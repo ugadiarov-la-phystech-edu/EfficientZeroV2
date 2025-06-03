@@ -33,7 +33,8 @@ def cosine_similarity_loss(f1, f2):
 
 def mse_loss(prediction, target):
     squared_error = (prediction - target).pow(2)
-    mse_per_object = squared_error.sum(dim=-1)
+    #mse_per_object = squared_error.sum(dim=-1)
+    mse_per_object = squared_error.mean(dim=-1)
     return mse_per_object.mean(dim=1)
 
 

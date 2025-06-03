@@ -546,12 +546,12 @@ class Agent:
                 gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index], prev_slots)
                 prev_slots = copy.deepcopy(gt_next_states)
                 # projection for consistency
-                dynamic_states_proj = model.do_projection(states, with_grad=True)
-                gt_states_proj = model.do_projection(gt_next_states, with_grad=False)
+                #dynamic_states_proj = model.do_projection(states, with_grad=True)
+                #gt_states_proj = model.do_projection(gt_next_states, with_grad=False)
                 if self.config.train.consistency_loss == 'mse':
-                    consistency_loss += mse_loss(dynamic_states_proj, gt_states_proj) * mask
+                    consistency_loss += mse_loss(states, gt_next_states) * mask
                 else:
-                    consistency_loss += cosine_similarity_loss(dynamic_states_proj, gt_states_proj) * mask
+                    consistency_loss += cosine_similarity_loss(states, gt_next_states) * mask
   
                 # reward, value, policy loss
                 if self.config.model.reward_support.type == 'symlog':

@@ -406,7 +406,7 @@ class OCSupportGRUGNN(nn.Module):
         self.update_bias = update_bias
         self.gnn = GNN(self.slot_dim + self.rnn_hidden_size, hidden_dim=self.latent_dim, action_dim=0, num_objects=self.n_slots,
                         ignore_action=True, copy_action=False, edge_actions=False, output_dim=3 * self.rnn_hidden_size)
-        self.mlp = nn.Linear(in_features=self.rnn_hidden_size, out_features=output_support_size)
+        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
 
     def forward(self, slots, hidden):
         hidden = hidden.squeeze(0)
@@ -417,7 +417,7 @@ class OCSupportGRUGNN(nn.Module):
         cand = self.act(reset * cand)
         update = torch.sigmoid(update + self.update_bias)
         hidden = (update * cand + (1 - update) * slots)
-        output = self.mlp(hidden).sum(dim=1)
+        output = self.mlp(hidden.sum(dim=1))
         return output, hidden.unsqueeze(0)
 
 
