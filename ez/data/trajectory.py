@@ -14,7 +14,7 @@ from ez.utils.format import str_to_arr
 class GameTrajectory:
     def __init__(self, **kwargs):
         # self.raw_obs_lst = []
-        self.obs_lst = []
+        self.slots_lst = []
         self.reward_lst = []
         self.policy_lst = []
         self.action_lst = []
@@ -37,22 +37,21 @@ class GameTrajectory:
         self.image_based = kwargs.get('image_based')
         self.episodic = kwargs.get('episodic')
         self.GAE_max_steps = kwargs.get('GAE_max_steps')
+        self.n_slots = kwargs.get('n_slots')
+        self.slot_dim = kwargs.get('slot_dim')
 
-    def init(self, init_frames):
-        assert len(init_frames) == self.n_stack
+    def init(self, init_slots):
+        self.slots_lst.append(copy.deepcopy(init_slots))
 
-        for obs in init_frames:
-            self.obs_lst.append(copy.deepcopy(obs))
-
-    def append(self, action, obs, reward):
+    def append(self, action, slots, reward):
         assert self.__len__() <= self.max_size
 
         # append a transition tuple
         self.action_lst.append(action)
-        self.obs_lst.append(obs)
+        self.slots_lst.append(slots)
         self.reward_lst.append(reward)
 
-    def pad_over(self, tail_obs, tail_rewards, tail_pred_values, tail_search_values, tail_policies):
+    def pad_over(self, tail_slots, tail_rewards, tail_pred_values, tail_search_values, tail_policies):
         """To make sure the correction of value targets, we need to add (o_t, r_t, etc) from the next history block
         , which is necessary for the bootstrapped values at the end states of this history block.
         Eg: len = 100; target value v_100 = r_100 + gamma^1 r_101 + ... + gamma^4 r_104 + gamma^5 v_105,
@@ -70,14 +69,14 @@ class GameTrajectory:
         tail_policies: list
             tail pi_t from the next trajectory block
         """
-        assert len(tail_obs) <= self.unroll_steps
+        assert len(tail_slots) <= self.unroll_steps
         assert len(tail_policies) <= self.unroll_steps
         # assert len(tail_search_values) <= self.unroll_steps + self.td_steps
         # assert len(tail_rewards) <= self.unroll_steps + self.td_steps - 1
 
         # notice: next block observation should start from (stacked_observation - 1) in next trajectory
-        for obs in tail_obs:
-            self.obs_lst.append(copy.deepcopy(obs))
+        for slots in tail_slots:
+            self.slots_lst.append(copy.deepcopy(slots))
 
         for reward in tail_rewards:
             self.reward_lst.append(reward)
@@ -101,7 +100,7 @@ class GameTrajectory:
         """
         # convert to numpy
         #self.obs_lst = ray.put(np.array(self.obs_lst))
-        self.obs_lst = np.array(self.obs_lst)
+        self.slots_lst = np.array(self.slots_lst)
         self.reward_lst = np.array(self.reward_lst)
         self.policy_lst = np.array(self.policy_lst)
         self.action_lst = np.array(self.action_lst)
@@ -112,7 +111,7 @@ class GameTrajectory:
     def make_target(self, index):
         assert index < self.__len__()
 
-        target_obs = self.get_index_stacked_obs(index)
+        target_slots = self.slots_lst[index:index+self.unroll_steps+1]
         target_reward = self.reward_lst[index:index+self.unroll_steps+1]
         target_pred_value = self.pred_value_lst[index:index+self.unroll_steps+1]
         target_search_value = self.search_value_lst[index:index+self.unroll_steps+1]
@@ -120,7 +119,7 @@ class GameTrajectory:
         target_policy = self.policy_lst[index:index+self.unroll_steps+1]
 
         assert len(target_reward) == len(target_pred_value) == len(target_search_value) == len(target_policy)
-        return np.array(target_obs), np.array(target_reward), np.array(target_pred_value), np.array(target_search_value), np.array(target_bt_value), np.array(target_policy)
+        return np.array(target_slots), np.array(target_reward), np.array(target_pred_value), np.array(target_search_value), np.array(target_bt_value), np.array(target_policy)
 
     def store_search_results(self, pred_value, search_value, policy, idx: int = None):
         # store the visit count distributions and value of the root node after MCTS
@@ -233,6 +232,9 @@ class GameTrajectory:
                         for _ in range(n_stack)]
         else:
             return [np.ones(self.obs_shape, dtype=np.float32) for _ in range(n_stack)]
+
+    def get_zero_slots(self):
+        return np.zeros((self.n_slots, self.slot_dim), dtype=np.float32)
 
     def get_current_stacked_obs(self):
         # return the current stacked observation of correct format for model inference
