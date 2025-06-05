@@ -70,6 +70,13 @@ class DataWorker(Worker):
         # log data
         episode_return = [0. for _ in range(num_envs)]
 
+        # stack obs
+        current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
+        with autocast():
+            states, values, policies = self.model.initial_inference(current_stacked_obs)
+        values = values.detach().cpu().numpy().flatten()
+        prev_slots = copy.deepcopy(states)
+
         # while loop for collecting data
         prev_train_steps = -10
         while not self.is_finished(trained_steps):
@@ -100,15 +107,6 @@ class DataWorker(Worker):
             # print('self-playing')
             # temperature
             temperature = self.agent.get_temperature(trained_steps=trained_steps) #* np.ones((num_envs, 1))
-
-            # stack obs
-            current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
-            # obtain the statistics at current steps
-            with autocast():
-                states, values, policies = self.model.initial_inference(current_stacked_obs)
-
-            # process outputs
-            values = values.detach().cpu().numpy().flatten()
 
             if collected_transitions % 200 == 0 and self.config.model.noisy_net and self.rank == 0:
                 print('*******************************')
@@ -156,17 +154,21 @@ class DataWorker(Worker):
 
                 # save data to trajectory buffer
                 game_trajs[i].store_search_results(values[i], r_values[i], r_policies[i])
-                game_trajs[i].append(action, obs, reward)
+                game_trajs[i].append(action, None, reward)
                 # game_trajs[i].raw_obs_lst.append(obs)
-                if self.config.env.env == 'Atari' or self.config.env.env == 'Shapes2d':
-                    game_trajs[i].snapshot_lst.append([])
-                else:
-                    game_trajs[i].snapshot_lst.append([])
+                game_trajs[i].snapshot_lst.append([])
 
                 # fresh stack windows
                 del stack_obs_windows[i][0]
                 stack_obs_windows[i].append(obs)
 
+            current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
+            with autocast():
+                states, values, policies = self.model.initial_inference(current_stacked_obs, prev_slots)
+            values = values.detach().cpu().numpy().flatten()
+
+            for i in range(num_envs):
+                game_trajs[i].slots_lst[-1] = states[i]
                 # if current trajectory is full; we will save the previous trajectory
                 if game_trajs[i].is_full():
                     if prev_game_trajs[i] is not None:
@@ -231,23 +233,20 @@ class DataWorker(Worker):
         if padding:
             # pad over last block trajectory
             if self.config.model.value_target == 'bootstrapped':
-                gap_step = self.config.env.n_stack + self.config.rl.td_steps
+                gap_step = self.config.rl.td_steps
             else:
                 extra = max(0, min(int(1 / (1 - self.config.rl.td_lambda)), self.config.model.GAE_max_steps) - self.config.rl.unroll_steps - 1)
-                gap_step = self.config.env.n_stack + 1 + extra + 1
+                gap_step = 1 + extra + 1
 
-            beg_index = self.config.env.n_stack
-            end_index = beg_index + self.config.rl.unroll_steps
 
-            pad_obs_lst = game_trajs[idx].obs_lst[beg_index:end_index]
-
+            pad_slots_lst = game_trajs[idx].slots_lst[0:self.config.rl.unroll_steps]
             pad_policy_lst = game_trajs[idx].policy_lst[0:self.config.rl.unroll_steps]
             pad_reward_lst = game_trajs[idx].reward_lst[0:gap_step - 1]
             pad_pred_values_lst = game_trajs[idx].pred_value_lst[0:gap_step]
             pad_search_values_lst = game_trajs[idx].search_value_lst[0:gap_step]
 
             # pad over and save
-            prev_game_trajs[idx].pad_over(pad_obs_lst, pad_reward_lst, pad_pred_values_lst, pad_search_values_lst,
+            prev_game_trajs[idx].pad_over(pad_slots_lst, pad_reward_lst, pad_pred_values_lst, pad_search_values_lst,
                                           pad_policy_lst)
         prev_game_trajs[idx].save_to_memory()
         self.put_trajs(prev_game_trajs[idx])
