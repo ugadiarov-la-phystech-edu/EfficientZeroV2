@@ -37,9 +37,10 @@ class PushCubeCustomEnv(PushCubeEnv):
         )
         place_reward = 1 - torch.tanh(5 * obj_to_goal_dist)
         reward += self._place_reward_coef * place_reward * reached
+        reward-=0.2
 
         # assign rewards to parallel environments that achieved success to the maximum of 3.
-        reward[info["success"]] = 3
+        reward[info["success"]] = 10
         return reward
 
 
