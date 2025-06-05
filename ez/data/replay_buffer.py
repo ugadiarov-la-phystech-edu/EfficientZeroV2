@@ -139,10 +139,10 @@ class ReplayBuffer:
         return context
 
     def split_trajs(self, traj_lst):
-        obs_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, \
+        slots_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, \
         bootstrapped_value_lsts, snapshot_lsts = [], [], [], [], [], [], [], []
         for traj in traj_lst:
-            obs_lsts.append(traj.obs_lst)
+            slots_lsts.append(traj.obs_lst)
             reward_lsts.append(traj.reward_lst)
             policy_lsts.append(traj.policy_lst)
             action_lsts.append(traj.action_lst)
@@ -150,7 +150,7 @@ class ReplayBuffer:
             search_value_lsts.append(traj.search_value_lst)
             bootstrapped_value_lsts.append(traj.bootstrapped_value_lst)
             snapshot_lsts.append(traj.snapshot_lst)
-        return [obs_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, bootstrapped_value_lsts,
+        return [slots_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, bootstrapped_value_lsts,
                 # snapshot_lsts
                 ]
 
