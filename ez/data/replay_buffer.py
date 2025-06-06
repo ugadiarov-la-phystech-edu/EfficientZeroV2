@@ -142,7 +142,7 @@ class ReplayBuffer:
         slots_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, \
         bootstrapped_value_lsts, snapshot_lsts = [], [], [], [], [], [], [], []
         for traj in traj_lst:
-            slots_lsts.append(traj.obs_lst)
+            slots_lsts.append(traj.slots_lst)
             reward_lsts.append(traj.reward_lst)
             policy_lsts.append(traj.policy_lst)
             action_lsts.append(traj.action_lst)
