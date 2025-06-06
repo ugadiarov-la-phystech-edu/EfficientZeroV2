@@ -86,10 +86,11 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
                      episodic_life=False, **config.env)
 
     # initialization
-    stack_obs_windows, game_trajs = agent.init_envs(envs, max_steps)
+    # stack_obs_windows, game_trajs = agent.init_envs(envs, max_steps)
+    stack_obs_windows, _ = agent.init_envs(envs, max_steps)
 
     # set infinity trajectory size
-    [traj.set_inf_len() for traj in game_trajs]
+    # [traj.set_inf_len() for traj in game_trajs]
 
     # begin to evaluate
     step = 0
@@ -155,20 +156,20 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
 
 
             # save data to trajectory buffer
-            game_trajs[i].store_search_results(values[i], r_values[i], r_policies[i])
-            game_trajs[i].append(action, obs, reward)
-            if config.env.env == 'Atari':
-                game_trajs[i].snapshot_lst.append(envs[i].ale.cloneState())
-            elif config.env.env == 'Shapes2d':
-                game_trajs[i].snapshot_lst.append(envs[i].clone_full_state())
-            elif config.env.env == 'causal_world':
-                game_trajs[i].snapshot_lst.append(envs[i].get_state())
-            elif config.env.env == 'robosuite':
-                game_trajs[i].snapshot_lst.append(envs[i].render())
-            elif config.env.env == 'maniskill':
-                game_trajs[i].snapshot_lst.append(envs[i].last_observation())
-            else:
-                game_trajs[i].snapshot_lst.append(envs[i].physics.get_state())
+            # game_trajs[i].store_search_results(values[i], r_values[i], r_policies[i])
+            # game_trajs[i].append(action, obs, reward)
+            # if config.env.env == 'Atari':
+            #     game_trajs[i].snapshot_lst.append(envs[i].ale.cloneState())
+            # elif config.env.env == 'Shapes2d':
+            #     game_trajs[i].snapshot_lst.append(envs[i].clone_full_state())
+            # elif config.env.env == 'causal_world':
+            #     game_trajs[i].snapshot_lst.append(envs[i].get_state())
+            # elif config.env.env == 'robosuite':
+            #     game_trajs[i].snapshot_lst.append(envs[i].render())
+            # elif config.env.env == 'maniskill':
+            #     game_trajs[i].snapshot_lst.append(envs[i].last_observation())
+            # else:
+            #     game_trajs[i].snapshot_lst.append(envs[i].physics.get_state())
 
             del stack_obs_windows[i][0]
             stack_obs_windows[i].append(obs)
@@ -192,11 +193,11 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
         j = 0
         for frame, reward in zip(frames[i], rewards[i]):
             frame = Image.fromarray(frame)
-            draw = ImageDraw.Draw(frame)
-            if config.env.game == 'hopper_hop':
-                draw.text((5, 5), f'mu={game_trajs[i].action_lst[j][0]:.2f},{game_trajs[i].action_lst[j][1]:.2f}')
-                draw.text((5, 20), f'{game_trajs[i].action_lst[j][2]:.2f},{game_trajs[i].action_lst[j][3]:.2f}')
-                draw.text((5, 35), f'r={reward:.2f}')
+            # draw = ImageDraw.Draw(frame)
+            # if config.env.game == 'hopper_hop':
+            #     draw.text((5, 5), f'mu={game_trajs[i].action_lst[j][0]:.2f},{game_trajs[i].action_lst[j][1]:.2f}')
+            #     draw.text((5, 20), f'{game_trajs[i].action_lst[j][2]:.2f},{game_trajs[i].action_lst[j][3]:.2f}')
+            #     draw.text((5, 35), f'r={reward:.2f}')
 
             frame = np.array(frame)
             writer.append_data(frame)
