@@ -66,11 +66,11 @@ class BatchWorker(Worker):
         self.slot_dim = self.config.oc.slot_dim
 
     def concat_trajs(self, items):
-        obs_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, \
+        slots_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, \
         bootstrapped_value_lsts = items
         traj_lst = []
-        for obs_lst, reward_lst, policy_lst, action_lst, pred_value_lst, search_value_lst, bootstrapped_value_lst in \
-                zip(obs_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, bootstrapped_value_lsts):
+        for slots_lst, reward_lst, policy_lst, action_lst, pred_value_lst, search_value_lst, bootstrapped_value_lst in \
+                zip(slots_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, bootstrapped_value_lsts):
             # traj = GameTrajectory(**self.config.env, **self.config.rl, **self.config.model)
             traj = GameTrajectory(
                 n_stack=self.n_stack, discount=self.discount, gray_scale=self.gray_scale, unroll_steps=self.unroll_steps,
@@ -78,7 +78,7 @@ class BatchWorker(Worker):
                 image_based=self.image_based, episodic=self.episodic, GAE_max_steps=self.GAE_max_steps, n_slots=self.n_slots,
                 slot_dim=self.slot_dim
             )
-            traj.obs_lst = obs_lst
+            traj.slots_lst = slots_lst
             traj.reward_lst = reward_lst
             traj.policy_lst = policy_lst
             traj.action_lst = action_lst
@@ -166,7 +166,7 @@ class BatchWorker(Worker):
         # ==============================================================================================================
         collected_transitions = ray.get(self.replay_buffer.get_transition_num.remote())
         # make observations, actions and masks (if unrolled steps are out of trajectory)
-        obs_lst, action_lst, mask_lst = [], [], []
+        slots_lst, action_lst, mask_lst = [], [], []
         top_new_masks = []
         # prepare the inputs of a batch
         for i in range(batch_size):
@@ -191,12 +191,12 @@ class BatchWorker(Worker):
                 _actions += [np.random.randint(0, self.action_space_size) for _ in range(self.unroll_steps - len(_actions))]
 
             # obtain the input observations
-            obs_lst.append(traj.get_index_stacked_obs(state_index, padding=True))
+            slots_lst.append(traj.get_index_slots(state_index, padding=True))
             action_lst.append(_actions)
             mask_lst.append(_mask)
 
-        obs_lst = prepare_obs_lst(obs_lst, self.image_based)
-        inputs_batch = [obs_lst, action_lst, mask_lst, indices_lst, weights_lst, make_time_lst, prior_lst]
+        #obs_lst = prepare_obs_lst(obs_lst, self.image_based)
+        inputs_batch = [slots_lst, action_lst, mask_lst, indices_lst, weights_lst, make_time_lst, prior_lst]
         for i in range(len(inputs_batch)):
             inputs_batch[i] = np.asarray(inputs_batch[i])
 
@@ -233,11 +233,11 @@ class BatchWorker(Worker):
         else:
             batch_policies_re = []
         # obtain the non-re policy
-        if batch_size - reanalyze_batch_size > 0:
-            batch_policies_non_re = self.prepare_policy_non_reanalyze(traj_lst[reanalyze_batch_size:],
-                                                                      transition_pos_lst[reanalyze_batch_size:])
-        else:
-            batch_policies_non_re = []
+        # if batch_size - reanalyze_batch_size > 0:
+        #     batch_policies_non_re = self.prepare_policy_non_reanalyze(traj_lst[reanalyze_batch_size:],
+        #                                                               transition_pos_lst[reanalyze_batch_size:])
+        # else:
+        #     batch_policies_non_re = []
         # concat target policy
         batch_policies = batch_policies_re
         if self.env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill']:
@@ -638,8 +638,8 @@ class BatchWorker(Worker):
         # search_values = []
 
         # init
-        value_obs_lst, td_steps_lst, value_mask = [], [], []    # mask: 0 -> out of traj
-        zero_obs = traj_lst[0].get_zero_obs(self.n_stack, channel_first=False)
+        value_slots_lst, td_steps_lst, value_mask = [], [], []    # mask: 0 -> out of traj
+        zero_slots = traj_lst[0].get_zero_slots()
 
         # get obs_{t+k}
         for traj, state_index, idx in zip(traj_lst, transition_pos_lst, indices_lst):
@@ -655,10 +655,10 @@ class BatchWorker(Worker):
                 td_steps = min(traj_len - state_index, td_steps)
             td_steps = np.clip(td_steps, 1, self.td_steps).astype(np.int32)
 
-            obs_idx = state_index + td_steps
+            slots_idx = state_index + td_steps
 
             # prepare the corresponding observations for bootstrapped values o_{t+k}
-            traj_obs = traj.get_index_stacked_obs(state_index + td_steps)
+            traj_slots = traj.get_index_slots(state_index + td_steps)
             for current_index in range(state_index, state_index + self.unroll_steps + 1):
                 if not self.episodic:
                     td_steps = min(traj_len - current_index, td_steps)
@@ -668,27 +668,27 @@ class BatchWorker(Worker):
                 if not self.episodic:
                     if bootstrap_index <= traj_len:
                         value_mask.append(1)
-                        beg_index = bootstrap_index - obs_idx
-                        end_index = beg_index + self.n_stack
-                        obs = traj_obs[beg_index:end_index]
+                        beg_index = bootstrap_index - slots_idx
+                        end_index = beg_index + 1
+                        slots = traj_slots[beg_index:end_index]
                     else:
                         value_mask.append(0)
-                        obs = zero_obs
+                        slots = zero_slots
                 else:
                     if bootstrap_index < traj_len:
                         value_mask.append(1)
                         beg_index = bootstrap_index - (state_index + td_steps)
-                        end_index = beg_index + self.n_stack
-                        obs = traj_obs[beg_index:end_index]
+                        end_index = beg_index + 1
+                        slots = traj_slots[beg_index:end_index]
                     else:
                         value_mask.append(0)
-                        obs = zero_obs
+                        slots = zero_slots
 
-                value_obs_lst.append(obs)
+                value_slots_lst.append(slots)
                 td_steps_lst.append(td_steps)
 
         # reanalyze the bootstrapped value v_{t+k}
-        state_lst, value_lst, policy_lst = self.efficient_inference(value_obs_lst, only_value=True)
+        state_lst, value_lst, policy_lst = self.efficient_inference(value_slots_lst, only_value=True)
         batch_size = len(value_lst)
         value_lst = value_lst.reshape(-1) * (np.array([self.discount for _ in range(batch_size)]) ** td_steps_lst)
         value_lst = value_lst * np.array(value_mask)
@@ -772,28 +772,28 @@ class BatchWorker(Worker):
 
         # init
         if value_lst is None:
-            policy_obs_lst, policy_mask = [], []   # mask: 0 -> out of traj
-            zero_obs = traj_lst[0].get_zero_obs(self.n_stack, channel_first=False)
+            policy_slots_lst, policy_mask = [], []   # mask: 0 -> out of traj
+            zero_slots = traj_lst[0].get_zero_slots()
 
             # get obs_{t} instead of obs_{t+k}
             for traj, state_index in zip(traj_lst, transition_pos_lst):
                 traj_len = len(traj)
 
-                game_obs = traj.get_index_stacked_obs(state_index)
+                game_slots = traj.get_index_slots(state_index)
                 for current_index in range(state_index, state_index + self.unroll_steps + 1):
 
                     if current_index < traj_len:
                         policy_mask.append(1)
                         beg_index = current_index - state_index
-                        end_index = beg_index + self.n_stack
-                        obs = game_obs[beg_index:end_index]
+                        end_index = beg_index + 1
+                        slots = game_slots[beg_index:end_index]
                     else:
                         policy_mask.append(0)
-                        obs = np.asarray(zero_obs)
-                    policy_obs_lst.append(obs)
+                        slots = np.asarray(zero_slots)
+                    policy_slots_lst.append(slots)
 
             # reanalyze the search policy pi_{t}
-            state_lst, value_lst, policy_lst = self.efficient_inference(policy_obs_lst, only_value=False)
+            state_lst, value_lst, policy_lst = self.efficient_inference(policy_slots_lst, only_value=False)
 
         # tree search for policies
         batch_size = len(state_lst)
@@ -975,9 +975,9 @@ class BatchWorker(Worker):
 
         return np.asarray(output_values)
 
-    def efficient_inference(self, obs_lst, only_value=False, value_idx=0):
-        batch_size = len(obs_lst)
-        obs_lst = np.asarray(obs_lst)
+    def efficient_inference(self, slots_lst, only_value=False, value_idx=0):
+        batch_size = len(slots_lst)
+        slots_lst = np.asarray(slots_lst)
         state_lst, value_lst, policy_lst = [], [], []
         # split a full batch into slices of mini_infer_size
         mini_batch = self.config.train.mini_batch_size
@@ -986,11 +986,11 @@ class BatchWorker(Worker):
             for i in range(slices):
                 beg_index = mini_batch * i
                 end_index = mini_batch * (i + 1)
-                current_obs = obs_lst[beg_index:end_index]
-                current_obs = formalize_obs_lst(current_obs, self.image_based)
+                current_slots = slots_lst[beg_index:end_index]
+                #current_obs = formalize_obs_lst(current_obs, self.image_based)
                 # obtain the statistics at current steps
                 with autocast():
-                    states, values, policies = self.model.initial_inference(current_obs)
+                    states, values, policies = self.model.initial_inference(current_slots, slots = True)
 
                 # process outputs
                 values = values.detach().cpu().numpy().flatten()

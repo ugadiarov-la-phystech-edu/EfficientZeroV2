@@ -111,7 +111,8 @@ class GameTrajectory:
     def make_target(self, index):
         assert index < self.__len__()
 
-        target_slots = self.slots_lst[index:index+self.unroll_steps+1]
+        #target_slots = self.slots_lst[index:index+self.unroll_steps+1]
+        target_slots = self.get_index_slots(index)
         target_reward = self.reward_lst[index:index+self.unroll_steps+1]
         target_pred_value = self.pred_value_lst[index:index+self.unroll_steps+1]
         target_search_value = self.search_value_lst[index:index+self.unroll_steps+1]
@@ -265,6 +266,17 @@ class GameTrajectory:
         if self.obs_to_string:
             frames = [str_to_arr(obs, self.gray_scale) for obs in frames]
         return frames
+
+    def get_index_slots(self, index, padding=False, extra=0):
+        unroll_steps = self.unroll_steps + extra
+        slots = self.slots_lst[index:index + unroll_steps]
+        if padding:
+            pad_len = unroll_steps - len(slots)
+            if pad_len > 0:
+                pad_slots = np.array([slots[-1] for _ in range(pad_len)])
+                slots = np.concatenate((slots, pad_slots))
+
+        return slots
 
     def set_inf_len(self):
         self.max_size = 100000000
