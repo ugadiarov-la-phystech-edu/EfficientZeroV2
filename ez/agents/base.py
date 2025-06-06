@@ -418,7 +418,7 @@ class Agent:
         batch_size = self.config.train.batch_size
         image_channel = self.config.env.obs_shape[0] if self.config.env.image_based else self.config.env.obs_shape
         unroll_steps = self.config.rl.unroll_steps
-        n_stack = self.config.env.n_stack
+        #n_stack = self.config.env.n_stack
         gradient_scale = 1. / unroll_steps
         reward_hidden = self.init_reward_hidden(batch_size)
         loss_data = {}
@@ -427,30 +427,19 @@ class Agent:
 
         # obtain the batch data
         inputs_batch, targets_batch = batch
-        obs_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time, prior_lst = inputs_batch
+        slots_batch_ori, action_batch, mask_batch, indices, weights_lst, make_time, prior_lst = inputs_batch
         target_value_prefixes, target_values, target_actions, target_policies, target_best_actions, \
             top_value_masks, mismatch_masks, search_values = targets_batch
         target_value_prefixes = target_value_prefixes[:, :unroll_steps]
 
         # obs_batch_raw: [s_{t - stack} ... s_{t} ... s_{t + unroll}]
-        if self.config.env.image_based:
-            obs_batch_raw = torch.from_numpy(obs_batch_ori).cuda().float() / 255.
-        else:
-            obs_batch_raw = torch.from_numpy(obs_batch_ori).cuda().float()
+        # if self.config.env.image_based:
+        #     obs_batch_raw = torch.from_numpy(slots_batch_ori).cuda().float() / 255.
+        # else:
+        slots_batch_raw = torch.from_numpy(slots_batch_ori).cuda().float()
 
-        obs_batch = obs_batch_raw[:, 0: n_stack * image_channel]  # obs_batch: current observation
-        obs_target_batch = obs_batch_raw[:, image_channel:]       # obs_target_batch: observation of next steps
-        # if self.config.train.use_decorrelation:
-        #     obs_batch_all = copy.deepcopy(obs_batch)
-        #     for step_i in range(1, unroll_steps + 1):
-        #         obs_batch_all = torch.cat((obs_batch_all, obs_batch_raw[:, step_i * image_channel: (step_i + n_stack) * image_channel]), dim=0)
-
-        # augmentation
-        #obs_batch = self.transform(obs_batch)
-        #obs_target_batch = self.transform(obs_target_batch)
-        # if self.config.train.use_decorrelation:
-        #     obs_batch_aug1 = self.transform(obs_batch_all)
-        #     obs_batch_aug2 = self.transform(obs_batch_all)
+        slots_batch = slots_batch_raw[:, 0]  # obs_batch: current observation
+        slots_target_batch = slots_batch_raw[:, 1:]       # obs_target_batch: observation of next steps
 
         # others to gpu
         if self.config.env.env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill']:
@@ -476,8 +465,7 @@ class Agent:
         target_value_prefixes_support = DiscreteSupport.scalar_to_vector(target_value_prefixes, **self.config.model.reward_support)
 
         with autocast():
-            states, values, policies = model.initial_inference(obs_batch, training=True)
-        prev_slots = copy.deepcopy(states)
+            states, values, policies = model.initial_inference(slots_batch, slots = True, training=True)
 
         if self.config.model.value_support.type == 'symlog':
             scaled_value = symexp(values).min(0)[0]
@@ -541,10 +529,7 @@ class Agent:
                 mask = mask_batch[:, step_i]
                 states, value_prefixes, values, policies, reward_hidden = model.recurrent_inference(states, action_batch[:, step_i], reward_hidden, training=True)
 
-                beg_index = image_channel * step_i
-                end_index = image_channel * (step_i + n_stack)
-                gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index], prev_slots)
-                prev_slots = copy.deepcopy(gt_next_states)
+                gt_next_states = slots_target_batch[:, step_i]
                 # projection for consistency
                 #dynamic_states_proj = model.do_projection(states, with_grad=True)
                 #gt_states_proj = model.do_projection(gt_next_states, with_grad=False)
