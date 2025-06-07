@@ -166,6 +166,7 @@ class DataWorker(Worker):
             with autocast():
                 states, values, policies = self.model.initial_inference(current_stacked_obs, prev_slots)
             values = values.detach().cpu().numpy().flatten()
+            prev_slots = copy.deepcopy(states)
 
             for i in range(num_envs):
                 game_trajs[i].slots_lst[-1] = states[i]
@@ -186,6 +187,7 @@ class DataWorker(Worker):
     
                 # reset an env if done
                 if dones[i]:
+                    prev_slots[i] = None
                     # save the previous trajectory
                     if prev_game_trajs[i] is not None:
                         self.save_previous_trajectory(i, prev_game_trajs, game_trajs,
