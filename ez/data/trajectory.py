@@ -273,7 +273,7 @@ class GameTrajectory:
         if padding:
             pad_len = unroll_steps - len(slots)
             if pad_len > 0:
-                pad_slots = np.array([slots[-1] for _ in range(pad_len)])
+                pad_slots = [slots[-1] for _ in range(pad_len)]
                 slots = np.concatenate((slots, pad_slots))
 
         return slots

@@ -688,6 +688,7 @@ class BatchWorker(Worker):
                 td_steps_lst.append(td_steps)
 
         # reanalyze the bootstrapped value v_{t+k}
+
         state_lst, value_lst, policy_lst = self.efficient_inference(value_slots_lst, only_value=True)
         batch_size = len(value_lst)
         value_lst = value_lst.reshape(-1) * (np.array([self.discount for _ in range(batch_size)]) ** td_steps_lst)
@@ -789,7 +790,7 @@ class BatchWorker(Worker):
                         slots = game_slots[beg_index:end_index]
                     else:
                         policy_mask.append(0)
-                        slots = np.asarray(zero_slots)
+                        slots = zero_slots
                     policy_slots_lst.append(slots)
 
             # reanalyze the search policy pi_{t}
@@ -977,6 +978,11 @@ class BatchWorker(Worker):
 
     def efficient_inference(self, slots_lst, only_value=False, value_idx=0):
         batch_size = len(slots_lst)
+        # print('AAAAAAAAAAAAAAAA')
+        # for i in slots_lst:
+        #     print(i.shape)
+        #     if i.shape == (1,):
+        #         print(i)
         slots_lst = np.asarray(slots_lst)
         state_lst, value_lst, policy_lst = [], [], []
         # split a full batch into slices of mini_infer_size
@@ -984,9 +990,9 @@ class BatchWorker(Worker):
         slices = np.ceil(batch_size / mini_batch).astype(np.int32)
         with torch.no_grad():
             for i in range(slices):
-                beg_index = mini_batch * i
-                end_index = mini_batch * (i + 1)
-                current_slots = slots_lst[beg_index:end_index]
+                index = mini_batch * i
+                current_slots = slots_lst[index]
+                #current_slots = torch.from_numpy(current_slots).float().cuda()
                 #current_obs = formalize_obs_lst(current_obs, self.image_based)
                 # obtain the statistics at current steps
                 with autocast():

@@ -169,7 +169,7 @@ class DataWorker(Worker):
             prev_slots = copy.deepcopy(states)
 
             for i in range(num_envs):
-                game_trajs[i].slots_lst[-1] = states[i]
+                game_trajs[i].slots_lst[-1] = states[i].detach().cpu().numpy()
                 # if current trajectory is full; we will save the previous trajectory
                 if game_trajs[i].is_full():
                     if prev_game_trajs[i] is not None:
