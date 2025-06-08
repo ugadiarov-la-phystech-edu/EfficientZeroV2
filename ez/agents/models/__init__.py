@@ -91,7 +91,7 @@ class EfficientZero(nn.Module):
         else:
             return proj.detach()
 
-    def initial_inference(self, slots, prev_slots=None, training=False):
+    def initial_inference(self, slots, training=False):
         values, policy = self.do_value_policy_prediction(slots)
 
         if training:
