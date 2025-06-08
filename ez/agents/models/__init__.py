@@ -91,15 +91,11 @@ class EfficientZero(nn.Module):
         else:
             return proj.detach()
 
-    def initial_inference(self, obs, prev_slots=None, slots = False, training=False):
-        if slots:
-            state = obs
-        else:
-            state = self.do_representation(obs, prev_slots)
-        values, policy = self.do_value_policy_prediction(state)
+    def initial_inference(self, slots, prev_slots=None, training=False):
+        values, policy = self.do_value_policy_prediction(slots)
 
         if training:
-            return state, values, policy
+            return values, policy
 
         if self.v_num > 2:
             values = values[np.random.choice(self.v_num, 2, replace=False)]
@@ -111,7 +107,7 @@ class EfficientZero(nn.Module):
         if self.config.env.env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill']:
             output_values = output_values.clip(0, 1e5)
 
-        return state, output_values, policy
+        return output_values, policy
 
 
     def recurrent_inference(self, state, action, reward_hidden, training=False):

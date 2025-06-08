@@ -235,7 +235,7 @@ class GameTrajectory:
             return [np.ones(self.obs_shape, dtype=np.float32) for _ in range(n_stack)]
 
     def get_zero_slots(self):
-        return np.zeros((self.n_slots, self.slot_dim), dtype=np.float32)
+        return np.zeros((1, self.n_slots, self.slot_dim), dtype=np.float32)
 
     def get_current_stacked_obs(self):
         # return the current stacked observation of correct format for model inference
@@ -267,9 +267,14 @@ class GameTrajectory:
             frames = [str_to_arr(obs, self.gray_scale) for obs in frames]
         return frames
 
-    def get_index_slots(self, index, extra=0):
+    def get_index_slots(self, index, padding = False, extra=0):
         unroll_steps = self.unroll_steps + extra
         slots = self.slots_lst[index:index + unroll_steps]
+        if padding:
+            pad_len = self.n_stack + unroll_steps - len(slots)
+            if pad_len > 0:
+                pad_slots = np.array([slots[-1] for _ in range(pad_len)])
+                slots = np.concatenate((slots, pad_slots))
 
         return slots
 

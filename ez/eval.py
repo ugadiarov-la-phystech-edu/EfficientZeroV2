@@ -105,11 +105,9 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
 
         # stack obs
         current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
-        # obtain the statistics at current steps
-        with torch.no_grad():
-            with autocast():
-                states, values, policies = model.initial_inference(current_stacked_obs)
-
+        slots = model.do_representation(current_stacked_obs)
+        with autocast():
+            values, policies = model.initial_inference(slots)
         values = values.detach().cpu().numpy().flatten()
 
 
@@ -125,14 +123,14 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
         )
         if config.env.env == 'Atari' or config.env.env == 'Shapes2d':
             if config.mcts.use_gumbel:
-                r_values, r_policies, best_actions, _ = tree.search(model, n_episodes, states, values, policies,
+                r_values, r_policies, best_actions, _ = tree.search(model, n_episodes, slots, values, policies,
                                                                     use_gumble_noise=False, verbose=verbose)
             else:
-                r_values, r_policies, best_actions, _ = tree.search_ori_mcts(model, n_episodes, states, values, policies,
+                r_values, r_policies, best_actions, _ = tree.search_ori_mcts(model, n_episodes, slots, values, policies,
                                                                                 use_noise=False)
         else:
             r_values, r_policies, best_actions, _, _, _ = tree.search_continuous(
-                    model, n_episodes, states, values, policies,
+                    model, n_episodes, slots, values, policies,
                     use_gumble_noise=False, verbose=verbose, add_noise=False
                 )
 

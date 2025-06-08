@@ -465,7 +465,8 @@ class Agent:
         target_value_prefixes_support = DiscreteSupport.scalar_to_vector(target_value_prefixes, **self.config.model.reward_support)
 
         with autocast():
-            states, values, policies = model.initial_inference(slots_batch, slots = True, training=True)
+            values, policies = model.initial_inference(slots_batch, training=True)
+        states = slots_batch
 
         if self.config.model.value_support.type == 'symlog':
             scaled_value = symexp(values).min(0)[0]
@@ -685,7 +686,6 @@ class Agent:
 
         traj = self.new_game(max_steps)
         stacked_obs = [obs for _ in range(self.config.env.n_stack)]
-        traj.init(stacked_obs)
 
         return stacked_obs, traj
 

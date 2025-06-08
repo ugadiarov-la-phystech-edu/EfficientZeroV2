@@ -174,6 +174,9 @@ class BatchWorker(Worker):
             state_index = transition_pos_lst[i]
             sample_idx = indices_lst[i]
 
+            # import ipdb
+            # ipdb.set_trace()
+
             top_new_masks.append(int(sample_idx > collected_transitions - self.mixed_value_threshold))
 
             if self.env in ['DMC', 'Gym', 'causal_world', 'robosuite', 'maniskill']:
@@ -191,7 +194,7 @@ class BatchWorker(Worker):
                 _actions += [np.random.randint(0, self.action_space_size) for _ in range(self.unroll_steps - len(_actions))]
 
             # obtain the input observations
-            slots_lst.append(traj.get_index_slots(state_index))
+            slots_lst.append(traj.get_index_slots(state_index, padding = True))
             action_lst.append(_actions)
             mask_lst.append(_mask)
 
@@ -676,8 +679,6 @@ class BatchWorker(Worker):
                         slots = zero_slots
                 else:
                     if bootstrap_index < traj_len:
-                        import ipdb
-                        ipdb.set_trace()
                         value_mask.append(1)
                         beg_index = bootstrap_index - (state_index + td_steps)
                         end_index = beg_index + 1
@@ -980,11 +981,6 @@ class BatchWorker(Worker):
 
     def efficient_inference(self, slots_lst, only_value=False, value_idx=0):
         batch_size = len(slots_lst)
-        print('AAAAAAAAAAAAAAAA')
-        for i in slots_lst:
-            print(i.shape)
-            if i.shape == (1,):
-                print(i)
         slots_lst = np.asarray(slots_lst)
         state_lst, value_lst, policy_lst = [], [], []
         # split a full batch into slices of mini_infer_size
@@ -994,18 +990,18 @@ class BatchWorker(Worker):
             for i in range(slices):
                 index = mini_batch * i
                 current_slots = slots_lst[index]
-                #current_slots = torch.from_numpy(current_slots).float().cuda()
+                current_slots = torch.from_numpy(current_slots).float().cuda()
                 #current_obs = formalize_obs_lst(current_obs, self.image_based)
                 # obtain the statistics at current steps
                 with autocast():
-                    states, values, policies = self.model.initial_inference(current_slots, slots = True)
+                    values, policies = self.model.initial_inference(current_slots)
 
                 # process outputs
                 values = values.detach().cpu().numpy().flatten()
                 # concat
                 value_lst.append(values)
                 if not only_value:
-                    state_lst.append(states)
+                    state_lst.append(current_slots)
                     policy_lst.append(policies)
 
         value_lst = np.concatenate(value_lst)

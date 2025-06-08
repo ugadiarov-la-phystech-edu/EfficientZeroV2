@@ -72,10 +72,14 @@ class DataWorker(Worker):
 
         # stack obs
         current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
+        slots = self.model.do_representation(current_stacked_obs)
         with autocast():
-            states, values, policies = self.model.initial_inference(current_stacked_obs)
+            values, policies = self.model.initial_inference(slots)
         values = values.detach().cpu().numpy().flatten()
-        prev_slots = copy.deepcopy(states)
+        prev_slots = copy.deepcopy(slots)
+
+        for i in range(num_envs):
+            game_trajs[i].init(slots[i].detach().cpu().numpy())
 
         # while loop for collecting data
         prev_train_steps = -10
@@ -129,15 +133,15 @@ class DataWorker(Worker):
             )
             if self.config.env.env == 'Atari' or self.config.env.env == 'Shapes2d':
                 if self.config.mcts.use_gumbel:
-                    r_values, r_policies, best_actions, _ = tree.search(self.model, num_envs, states, values, policies,
+                    r_values, r_policies, best_actions, _ = tree.search(self.model, num_envs, slots, values, policies,
                                                                         # use_gumble_noise=False, # for test search
                                                                         temperature=temperature)
                 else:
-                    r_values, r_policies, best_actions, _ = tree.search_ori_mcts(self.model, num_envs, states, values, policies,
+                    r_values, r_policies, best_actions, _ = tree.search_ori_mcts(self.model, num_envs, slots, values, policies,
                                                                                     use_noise=True, temperature=temperature)
             else:
                 r_values, r_policies, best_actions, sampled_actions, best_indexes, mcts_info = tree.search_continuous(
-                        self.model, num_envs, states, values, policies, temperature=temperature,
+                        self.model, num_envs, slots, values, policies, temperature=temperature,
                         # use_gumble_noise=True,
                         input_noises=None 
                     )
@@ -163,13 +167,14 @@ class DataWorker(Worker):
                 stack_obs_windows[i].append(obs)
 
             current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
+            slots = self.model.do_representation(current_stacked_obs, prev_slots)
             with autocast():
-                states, values, policies = self.model.initial_inference(current_stacked_obs, prev_slots)
+                values, policies = self.model.initial_inference(slots)
             values = values.detach().cpu().numpy().flatten()
-            prev_slots = copy.deepcopy(states)
+            prev_slots = copy.deepcopy(slots)
 
             for i in range(num_envs):
-                game_trajs[i].slots_lst[-1] = states[i].detach().cpu().numpy()
+                game_trajs[i].slots_lst[-1] = slots[i].detach().cpu().numpy()
                 # if current trajectory is full; we will save the previous trajectory
                 if game_trajs[i].is_full():
                     if prev_game_trajs[i] is not None:
@@ -181,7 +186,7 @@ class DataWorker(Worker):
 
                     # new trajectory
                     game_trajs[i] = self.agent.new_game(max_steps=self.config.data.trajectory_size)
-                    game_trajs[i].init(states[i].detach().cpu().numpy())
+                    game_trajs[i].init(slots[i].detach().cpu().numpy())
 
                     traj_len[i] = 0
     
@@ -214,6 +219,9 @@ class DataWorker(Worker):
                     stacked_obs, traj = self.agent.init_env(envs[i], max_steps=self.config.data.trajectory_size)
                     stack_obs_windows[i] = stacked_obs
                     game_trajs[i] = traj
+                    current_stacked_obs = formalize_obs_lst(stack_obs_windows[i], image_based=config.env.image_based)
+                    slots = self.model.do_representation(current_stacked_obs, prev_slots)
+                    game_trajs[i].init(slots.detach().cpu().numpy())
                     prev_game_trajs[i] = None
 
                     traj_len[i] = 0
