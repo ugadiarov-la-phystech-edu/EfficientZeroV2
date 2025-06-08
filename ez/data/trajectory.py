@@ -267,14 +267,9 @@ class GameTrajectory:
             frames = [str_to_arr(obs, self.gray_scale) for obs in frames]
         return frames
 
-    def get_index_slots(self, index, padding=False, extra=0):
+    def get_index_slots(self, index, extra=0):
         unroll_steps = self.unroll_steps + extra
         slots = self.slots_lst[index:index + unroll_steps]
-        if padding:
-            pad_len = unroll_steps - len(slots)
-            if pad_len > 0:
-                pad_slots = [slots[-1] for _ in range(pad_len)]
-                slots = np.concatenate((slots, pad_slots))
 
         return slots
 

@@ -191,7 +191,7 @@ class BatchWorker(Worker):
                 _actions += [np.random.randint(0, self.action_space_size) for _ in range(self.unroll_steps - len(_actions))]
 
             # obtain the input observations
-            slots_lst.append(traj.get_index_slots(state_index, padding=True))
+            slots_lst.append(traj.get_index_slots(state_index))
             action_lst.append(_actions)
             mask_lst.append(_mask)
 
