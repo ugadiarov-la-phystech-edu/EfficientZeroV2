@@ -181,7 +181,7 @@ class DataWorker(Worker):
 
                     # new trajectory
                     game_trajs[i] = self.agent.new_game(max_steps=self.config.data.trajectory_size)
-                    game_trajs[i].init(stack_obs_windows[i])
+                    game_trajs[i].init(states[i].detach().cpu().numpy())
 
                     traj_len[i] = 0
     

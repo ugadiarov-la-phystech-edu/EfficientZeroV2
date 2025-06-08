@@ -676,6 +676,8 @@ class BatchWorker(Worker):
                         slots = zero_slots
                 else:
                     if bootstrap_index < traj_len:
+                        import ipdb
+                        ipdb.set_trace()
                         value_mask.append(1)
                         beg_index = bootstrap_index - (state_index + td_steps)
                         end_index = beg_index + 1
@@ -978,11 +980,11 @@ class BatchWorker(Worker):
 
     def efficient_inference(self, slots_lst, only_value=False, value_idx=0):
         batch_size = len(slots_lst)
-        # print('AAAAAAAAAAAAAAAA')
-        # for i in slots_lst:
-        #     print(i.shape)
-        #     if i.shape == (1,):
-        #         print(i)
+        print('AAAAAAAAAAAAAAAA')
+        for i in slots_lst:
+            print(i.shape)
+            if i.shape == (1,):
+                print(i)
         slots_lst = np.asarray(slots_lst)
         state_lst, value_lst, policy_lst = [], [], []
         # split a full batch into slices of mini_infer_size
