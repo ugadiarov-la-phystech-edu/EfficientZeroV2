@@ -785,7 +785,6 @@ class BatchWorker(Worker):
 
                 game_slots = traj.get_index_slots(state_index)
                 for current_index in range(state_index, state_index + self.unroll_steps + 1):
-
                     if current_index < traj_len:
                         policy_mask.append(1)
                         beg_index = current_index - state_index
@@ -988,11 +987,11 @@ class BatchWorker(Worker):
         slices = np.ceil(batch_size / mini_batch).astype(np.int32)
         with torch.no_grad():
             for i in range(slices):
-                index = mini_batch * i
-                current_slots = slots_lst[index]
-                current_slots = torch.from_numpy(current_slots).float().cuda()
-                #current_obs = formalize_obs_lst(current_obs, self.image_based)
-                # obtain the statistics at current steps
+                beg_index = mini_batch * i
+                end_index = mini_batch * (i + 1)
+                current_slots = slots_lst[beg_index:end_index]
+                current_slots = torch.from_numpy(current_slots).cuda().float().squeeze(1)
+                # obtain the statistics at current steps.
                 with autocast():
                     values, policies = self.model.initial_inference(current_slots)
 
