@@ -255,12 +255,14 @@ def formalize_obs_lst(obs_lst, image_based, slots_based, already_prepare=False):
     # obs_lst = prepare_obs_lst(obs_lst, image_based)
     obs_lst = np.asarray(obs_lst)
     if image_based:
+        obs_lst = np.asarray(obs_lst)
         obs_lst = torch.from_numpy(obs_lst).cuda().float() / 255.
         obs_lst = torch.moveaxis(obs_lst, -1, 2)
         shape = obs_lst.shape
         obs_lst = obs_lst.reshape((shape[0], -1, shape[-2], shape[-1]))
     if slots_based:
         obs_lst = torch.from_numpy(obs_lst).cuda().float()
+        obs_lst = obs_lst.squeeze(1)
     else:
         obs_lst = torch.from_numpy(obs_lst).cuda().float()
         shape = obs_lst.shape
