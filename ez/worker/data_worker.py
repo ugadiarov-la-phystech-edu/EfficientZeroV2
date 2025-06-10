@@ -173,9 +173,6 @@ class DataWorker(Worker):
             values = values.detach().cpu().numpy().flatten()
             prev_slots = copy.deepcopy(slots)
 
-            import ipdb
-            ipdb.set_trace()
-
             for i in range(num_envs):
                 game_trajs[i].slots_lst[-1] = slots[i].detach().cpu().numpy()
                 # if current trajectory is full; we will save the previous trajectory
@@ -195,7 +192,6 @@ class DataWorker(Worker):
     
                 # reset an env if done
                 if dones[i]:
-                    prev_slots[i] = None
                     # save the previous trajectory
                     if prev_game_trajs[i] is not None:
                         self.save_previous_trajectory(i, prev_game_trajs, game_trajs,
@@ -223,8 +219,9 @@ class DataWorker(Worker):
                     stack_obs_windows[i] = stacked_obs
                     game_trajs[i] = traj
                     init_stacked_obs = formalize_obs_lst([stack_obs_windows[i]], image_based=config.env.image_based)
-                    slots = self.model.do_representation(init_stacked_obs, prev_slots)
-                    game_trajs[i].init(slots.detach().cpu().numpy())
+                    init_slots = self.model.do_representation(init_stacked_obs)
+                    prev_slots[i] = init_slots[0]
+                    game_trajs[i].init(init_slots[0].detach().cpu().numpy())
                     prev_game_trajs[i] = None
 
                     traj_len[i] = 0
