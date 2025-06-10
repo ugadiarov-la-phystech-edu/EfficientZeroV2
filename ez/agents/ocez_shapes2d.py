@@ -14,6 +14,8 @@ from ez.envs import make_shapes2d
 from ez.utils.format import DiscreteSupport
 from ez.agents.models import EfficientZero
 from ez.agents.models.base_model import *
+from ez.envs.shapes2d import shapes2d
+import gym
 
 
 class OCEZShapes2dAgent(Agent):
@@ -34,7 +36,7 @@ class OCEZShapes2dAgent(Agent):
     def update_config(self):
         assert not self._update
 
-        env = make_shapes2d(self.config.env.game, seed=0, save_path=None, **self.config.env)
+        env = gym.make(self.config.env.game)
         action_space_size = env.action_space.n
 
         obs_channel = 1 if self.config.env.gray_scale else 3

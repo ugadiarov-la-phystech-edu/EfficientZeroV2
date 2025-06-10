@@ -13,6 +13,7 @@ from ez.envs import make_causal_world
 from ez.utils.format import DiscreteSupport
 from ez.agents.models import EfficientZero
 from ez.agents.models.base_model import *
+from ez.envs.causal_world.cw_envs import CwTargetEnv
 
 
 class OCEZCWAgent(Agent):
@@ -33,7 +34,8 @@ class OCEZCWAgent(Agent):
     def update_config(self):
         assert not self._update
 
-        env = make_causal_world(self.config.env.setting, seed=0, **self.config.env)
+        env_config = OmegaConf.load(self.config.env.setting)
+        env = CwTargetEnv(env_config, seed = 0)
         action_space_size = env.action_space.shape[0]
 
         obs_channel = 1 if self.config.env.gray_scale else 3

@@ -205,3 +205,33 @@ class FailOnTimelimitWrapper(gym.Wrapper):
             info['is_success'] = False
 
         return observation, reward, done, info
+
+class SlotExtractorWrapper(gym.Wrapper):
+    """
+    Wrapper uses SlotExtractor in order to extract slots from the input image.
+    """
+
+    def __init__(self, env, model, num_slots, slot_dim):
+        super().__init__(env)
+
+        self.model = model
+        self.observation_space = gym.spaces.Box(
+            low=-np.inf, high=np.inf, shape=(num_slots, slot_dim), dtype=np.float32
+        )
+        self.prev_slots = None
+
+    def _get_slots(self, frame, prev_slots=None):
+        if prev_slots is None:
+            prev_slots = self.model.do_representation(frame, prev_slots=None)
+
+        return self.slot_extractor(frame, prev_slots=prev_slots)
+
+    def reset(self):
+        frame = self.env.reset()
+        self.prev_slots = self.model.do_representation(frame, prev_slots=None)
+        return self.prev_slots.copy()
+
+    def step(self, action):
+        frame, reward, done, info = self.env.step(action)
+        self.prev_slots = self.model.do_representation(frame, prev_slots=self.prev_slots)
+        return self.prev_slots.copy(), reward, done, info

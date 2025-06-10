@@ -53,8 +53,9 @@ class DataWorker(Worker):
             video_path = None
         cur_seed = config.env.base_seed
 
-        envs = make_envs(config.env.env, config.env.game, num_envs, cur_seed + self.rank * num_envs,
-                         save_path=video_path, episodic_life=config.env.episodic, **config.env)   # prev episodic_life=True
+        envs = make_envs(config.env.env, config.env.game, self.model, num_envs, cur_seed + self.rank * num_envs,
+                         save_path=video_path, episodic_life=config.env.episodic,
+                         num_slots = config.oc.n_slots, slot_dim = config.oc.slot_dim, **config.env)   # prev episodic_life=True
 
         # initialization
         trained_steps = 0           # current training steps
@@ -205,8 +206,9 @@ class DataWorker(Worker):
 
                     # reset the finished env and new a env
                     if self.config.env.env == 'DMC':
-                        envs[i] = make_env(config.env.env, config.env.game, num_envs, cur_seed + self.rank * num_envs,
-                             save_path=video_path, episodic_life=config.env.episodic, **config.env)
+                        envs[i] = make_env(config.env.env, config.env.game, self.model, num_envs, cur_seed + self.rank * num_envs,
+                             save_path=video_path, episodic_life=config.env.episodic,
+                             num_slots = config.oc.n_slots, slot_dim = config.oc.slot_dim, **config.env)
                     stacked_obs, traj = self.agent.init_env(envs[i], max_steps=self.config.data.trajectory_size)
                     stack_obs_windows[i] = stacked_obs
                     game_trajs[i] = traj

@@ -15,7 +15,7 @@ from ez.envs.maniskill3 import ManiSkill
 from ez.envs.robosuite import RobosuiteEnv
 
 
-def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
+def make_envs(game_setting, game_name, model, num_envs, seed, save_path=None, **kwargs):
     assert game_setting in ['Atari', 'DMC', 'Gym', 'Shapes2d', 'causal_world', 'robosuite', 'maniskill']
     if game_setting == 'Atari':
         _env_fn = make_atari
@@ -41,10 +41,15 @@ def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs)
     if game_setting == 'causal_world':
         envs = [_env_fn(env_setting,
                         seed=i + seed,
-                        # seed=seed,
+                        model = model,
                         save_path=save_path, **kwargs) for i in range(num_envs)]
     elif game_setting == 'maniskill':
         envs = [_env_fn(seed=i + seed, **kwargs) for i in range(num_envs)]
+    elif game_setting == 'Shapes2dl':
+        envs = [_env_fn(game_name,
+                        seed=i + seed,
+                        model=model,
+                        save_path=save_path, **kwargs) for i in range(num_envs)]
     else:
         envs = [_env_fn(game_name,
                         seed=i + seed,
@@ -54,7 +59,7 @@ def make_envs(game_setting, game_name, num_envs, seed, save_path=None, **kwargs)
     return envs
 
 
-def make_env(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
+def make_env(game_setting, game_name, model, num_envs, seed, save_path=None, **kwargs):
     assert game_setting in ['Atari', 'DMC', 'Gym', 'Shapes2d', 'causal_world', 'robosuite', 'maniskill']
     if game_setting == 'Atari':
         _env_fn = make_atari
@@ -77,9 +82,11 @@ def make_env(game_setting, game_name, num_envs, seed, save_path=None, **kwargs):
     seed = random.randint(1, 1000)
 
     if game_setting == 'causal_world':
-        env = _env_fn(env_setting, seed=seed, save_path=save_path, **kwargs)
+        env = _env_fn(env_setting, seed=seed, model=model, save_path=save_path, **kwargs)
     elif game_setting == 'maniksill':
         env = _env_fn(seed = seed, **kwargs)
+    elif game_setting == 'Shapes2d':
+        env = _env_fn(game_name, seed=seed, model=model, save_path=save_path, **kwargs)
     else:
         env = _env_fn(game_name, seed=seed, save_path=save_path, **kwargs)
 
@@ -219,13 +226,15 @@ def make_dmc(game_name, seed, save_path=None, **kwargs):
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
     return env
 
-def make_shapes2d(game_name, seed, save_path=None, **kwargs):
+def make_shapes2d(game_name, seed, model, save_path=None, **kwargs):
 
     gray_scale = kwargs.get('gray_scale')
     obs_shape = kwargs['obs_shape']
     max_episode_steps = kwargs['max_episode_steps']
     clip_reward = kwargs.get('clip_reward')
     obs_to_string = kwargs.get('obs_to_string')
+    num_slots = kwargs.get('num_slots')
+    slot_dim = kwargs.get('slot_dim')
 
     env = gym.make(game_name)
 
@@ -236,14 +245,18 @@ def make_shapes2d(game_name, seed, save_path=None, **kwargs):
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
 
     env = AtariWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
+
+    env = SlotExtractorWrapper(env, model, num_slots, slot_dim)
     return env
 
-def make_causal_world(env_config_path, seed, save_path=None, **kwargs):
+def make_causal_world(env_config_path, seed, model, save_path=None, **kwargs):
 
     clip_reward = kwargs.get('clip_reward')
     obs_to_string = kwargs.get('obs_to_string')
     obs_shape = kwargs['obs_shape']
     gray_scale = kwargs.get('gray_scale')
+    num_slots = kwargs.get('num_slots')
+    slot_dim = kwargs.get('slot_dim')
 
     env_config = OmegaConf.load(env_config_path)
     env = CwTargetEnv(env_config, seed)
@@ -255,6 +268,8 @@ def make_causal_world(env_config_path, seed, save_path=None, **kwargs):
     env = TimeLimit(env, env.unwrapped._max_episode_length)
 
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
+
+    env = SlotExtractorWrapper(env, model, num_slots, slot_dim)
     return env
 
 def make_robosuite(game_name, seed, save_path=None, **kwargs):
