@@ -62,6 +62,9 @@ class BatchWorker(Worker):
         self.mixed_value_threshold = self.config.train.mixed_value_threshold
         self.rnn_hidden_size = self.config.model.rnn_hidden_size
         self.cnt = 0
+        self.n_slots = self.config.oc.n_slots
+        self.slot_dim = self.config.oc.slot_dim
+        self.slots_based = self.config.env.slots_based
 
     def concat_trajs(self, items):
         obs_lsts, reward_lsts, policy_lsts, action_lsts, pred_value_lsts, search_value_lsts, \
@@ -73,7 +76,8 @@ class BatchWorker(Worker):
             traj = GameTrajectory(
                 n_stack=self.n_stack, discount=self.discount, gray_scale=self.gray_scale, unroll_steps=self.unroll_steps,
                 td_steps=self.td_steps, td_lambda=self.td_lambda, obs_shape=self.obs_shape, max_size=self.trajectory_size,
-                image_based=self.image_based, episodic=self.episodic, GAE_max_steps=self.GAE_max_steps
+                image_based=self.image_based, episodic=self.episodic, GAE_max_steps=self.GAE_max_steps, n_slots=self.n_slots,
+                slot_dim=self.slot_dim, slots_based=self.slots_based
             )
             traj.obs_lst = obs_lst
             traj.reward_lst = reward_lst

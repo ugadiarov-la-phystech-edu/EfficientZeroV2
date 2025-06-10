@@ -37,6 +37,9 @@ class GameTrajectory:
         self.image_based = kwargs.get('image_based')
         self.episodic = kwargs.get('episodic')
         self.GAE_max_steps = kwargs.get('GAE_max_steps')
+        self.n_slots = kwargs.get('n_slots')
+        self.slot_dim = kwargs.get('slot_dim')
+        self.slots_based = kwargs.get('slots_based')
 
     def init(self, init_frames):
         assert len(init_frames) == self.n_stack
@@ -231,6 +234,8 @@ class GameTrajectory:
             else:
                 return [np.ones((self.obs_shape[1], self.obs_shape[2], self.obs_shape[0]), dtype=np.uint8)
                         for _ in range(n_stack)]
+        elif self.slots_based:
+            return [np.zeros((self.n_slots, self.slot_dim), dtype=np.float32) for _ in range(n_stack)]
         else:
             return [np.ones(self.obs_shape, dtype=np.float32) for _ in range(n_stack)]
 

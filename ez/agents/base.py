@@ -726,7 +726,7 @@ class Agent:
     def new_game(self, max_steps):
         assert self._update
 
-        traj = GameTrajectory(**self.config.env, **self.config.rl, **self.config.model, trajectory_size=max_steps)
+        traj = GameTrajectory(**self.config.env, **self.config.rl, **self.config.model, **self.config.oc, trajectory_size=max_steps)
         if max_steps is None:
             traj.set_inf_len()
         return traj
