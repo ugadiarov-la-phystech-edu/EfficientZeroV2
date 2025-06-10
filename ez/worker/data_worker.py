@@ -103,10 +103,12 @@ class DataWorker(Worker):
             temperature = self.agent.get_temperature(trained_steps=trained_steps) #* np.ones((num_envs, 1))
 
             # stack obs
-            current_stacked_obs = formalize_obs_lst(stack_obs_windows, image_based=config.env.image_based)
+            current_stacked_obs = formalize_obs_lst(stack_obs_windows,
+                                                    slots_based=config.env.slots_based,
+                                                    image_based=config.env.image_based,)
             # obtain the statistics at current steps
             with autocast():
-                states, values, policies = self.model.initial_inference(current_stacked_obs)
+                values, policies = self.model.initial_inference(current_stacked_obs)
 
             # process outputs
             values = values.detach().cpu().numpy().flatten()
@@ -132,15 +134,15 @@ class DataWorker(Worker):
             )
             if self.config.env.env == 'Atari' or self.config.env.env == 'Shapes2d':
                 if self.config.mcts.use_gumbel:
-                    r_values, r_policies, best_actions, _ = tree.search(self.model, num_envs, states, values, policies,
+                    r_values, r_policies, best_actions, _ = tree.search(self.model, num_envs, current_stacked_obs, values, policies,
                                                                         # use_gumble_noise=False, # for test search
                                                                         temperature=temperature)
                 else:
-                    r_values, r_policies, best_actions, _ = tree.search_ori_mcts(self.model, num_envs, states, values, policies,
+                    r_values, r_policies, best_actions, _ = tree.search_ori_mcts(self.model, num_envs, current_stacked_obs, values, policies,
                                                                                     use_noise=True, temperature=temperature)
             else:
                 r_values, r_policies, best_actions, sampled_actions, best_indexes, mcts_info = tree.search_continuous(
-                        self.model, num_envs, states, values, policies, temperature=temperature,
+                        self.model, num_envs, current_stacked_obs, values, policies, temperature=temperature,
                         # use_gumble_noise=True,
                         input_noises=None 
                     )

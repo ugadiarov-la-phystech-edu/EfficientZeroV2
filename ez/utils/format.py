@@ -250,7 +250,7 @@ def str_to_arr(s, gray_scale=False):
     return arr
 
 
-def formalize_obs_lst(obs_lst, image_based, already_prepare=False):
+def formalize_obs_lst(obs_lst, image_based, slots_based, already_prepare=False):
     # if not already_prepare:
     # obs_lst = prepare_obs_lst(obs_lst, image_based)
     obs_lst = np.asarray(obs_lst)
@@ -259,6 +259,8 @@ def formalize_obs_lst(obs_lst, image_based, already_prepare=False):
         obs_lst = torch.moveaxis(obs_lst, -1, 2)
         shape = obs_lst.shape
         obs_lst = obs_lst.reshape((shape[0], -1, shape[-2], shape[-1]))
+    if slots_based:
+        obs_lst = torch.from_numpy(obs_lst).cuda().float()
     else:
         obs_lst = torch.from_numpy(obs_lst).cuda().float()
         shape = obs_lst.shape
