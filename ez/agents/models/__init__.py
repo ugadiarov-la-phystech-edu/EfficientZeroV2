@@ -12,7 +12,6 @@ from ez.utils.format import formalize_obs_lst, DiscreteSupport, allocate_gpu, pr
 
 class EfficientZero(nn.Module):
     def __init__(self,
-                 representation_model,
                  dynamics_model,
                  reward_prediction_model,
                  value_policy_model,
@@ -42,7 +41,6 @@ class EfficientZero(nn.Module):
         """
         super().__init__()
 
-        self.representation_model = representation_model
         self.dynamics_model = dynamics_model
         self.reward_prediction_model = reward_prediction_model
         self.value_policy_model = value_policy_model
@@ -52,13 +50,6 @@ class EfficientZero(nn.Module):
         self.state_norm = kwargs.get('state_norm')
         self.value_prefix = kwargs.get('value_prefix')
         self.v_num = config.train.v_num
-
-    def do_representation(self, obs, prev_slots = None):
-        state = self.representation_model(obs, prev_slots)
-        if self.state_norm:
-            state = normalize_state(state)
-
-        return state
 
     def do_dynamics(self, state, action):
         next_state = self.dynamics_model(state, action)
@@ -80,16 +71,6 @@ class EfficientZero(nn.Module):
         value, policy = self.value_policy_model(state)
         return value, policy
 
-    def do_projection(self, state, with_grad=True):
-        # only the branch of proj + pred can share the gradients
-        proj = self.projection_model(state)
-
-        # with grad, use proj_head
-        if with_grad:
-            proj = self.projection_head_model(proj)
-            return proj
-        else:
-            return proj.detach()
 
     def initial_inference(self, obs, training=False):
         values, policy = self.do_value_policy_prediction(obs)

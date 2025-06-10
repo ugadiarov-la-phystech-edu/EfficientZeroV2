@@ -83,7 +83,10 @@ def eval(agent, model, n_episodes, save_path, config, max_steps=None, use_pb=Fal
     if max_steps is not None:
         config.env.max_episode_steps = max_steps
     envs = make_envs(config.env.env, config.env.game, model, n_episodes, config.env.base_seed, save_path=video_path,
-                     num_slots = config.oc.n_slots, slot_dim = config.oc.slot_dim, episodic_life=False, **config.env)
+                     num_slots = config.oc.n_slots, slot_dim = config.oc.slot_dim,
+                     ocr_config_path=config.oc.ocr_config_path,
+                     checkpoint_path=config.oc.checkpoint_path,
+                     episodic_life=False, **config.env)
 
     # initialization
     stack_obs_windows, game_trajs = agent.init_envs(envs, max_steps)

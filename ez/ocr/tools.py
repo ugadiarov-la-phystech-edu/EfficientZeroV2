@@ -307,6 +307,40 @@ def obs_to_tensor(obs, device):
     else:
         return torch.Tensor(obs).to(device)
 
+class SlotExtractor:
+    def __init__(self, model, device, name_model):
+        self._model = model
+        self._device = device
+        self._model.to(device)
+        self.name_model = name_model
+
+    def __call__(self, images, prev_slots, to_numpy=True):
+        if len(images.shape) == 3:
+            batch_images = images[np.newaxis, ...]
+        else:
+            batch_images = images
+
+        if prev_slots is not None and len(prev_slots.shape) == 2:
+            batch_prev_slots = prev_slots[np.newaxis, ...]
+        else:
+            batch_prev_slots = prev_slots
+
+        batch_images = obs_to_tensor(batch_images, self._device)
+        if batch_prev_slots is not None:
+            batch_prev_slots = obs_to_tensor(batch_prev_slots, self._device)
+
+        if self.name_model == 'SLATE':
+            slots = self._model._module._get_slots(batch_images, prev_slots=batch_prev_slots).detach()
+        else:
+            slots = self._model(batch_images, prev_slots=batch_prev_slots).detach()
+
+        if len(images.shape) == 3:
+            slots = slots[0]
+
+        if to_numpy:
+            slots = slots.cpu().numpy()
+
+        return slots
 
 class Dinosaur(torch.nn.Module):
     def __init__(self, dino_model_name, n_slots, slot_dim, intput_feature_dim, num_patches, features, *args, **kwargs):

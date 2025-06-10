@@ -549,13 +549,7 @@ class Agent:
 
                 beg_index = image_channel * step_i
                 end_index = image_channel * (step_i + n_stack)
-                if self.config.env.slots_based:
-                    gt_next_states = obs_target_batch[:, beg_index:end_index]
-                else:
-                    gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index])
-                    # projection for consistency
-                    states = model.do_projection(states, with_grad=True)
-                    gt_next_states = model.do_projection(gt_next_states, with_grad=False)
+                gt_next_states = obs_target_batch[:, beg_index:end_index]
                 if self.config.train.consistency_loss == 'mse':
                     consistency_loss += mse_loss(states, gt_next_states) * mask
                 else:

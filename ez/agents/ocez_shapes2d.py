@@ -10,7 +10,6 @@ import math
 from ez.agents.base import Agent
 from omegaconf import open_dict
 
-from ez.envs import make_shapes2d
 from ez.utils.format import DiscreteSupport
 from ez.agents.models import EfficientZero
 from ez.agents.models.base_model import *
@@ -78,7 +77,7 @@ class OCEZShapes2dAgent(Agent):
         self._update = True
 
     def build_model(self):
-        representation_model = OCRepresentationNetworkSLATE(self.slate_config, self.obs_shape[2], self.slate_weights)
+        # representation_model = OCRepresentationNetworkSLATE(self.slate_config, self.obs_shape[2], self.slate_weights)
 
         dynamics_model = OCDynamicsNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots)
 
@@ -95,7 +94,7 @@ class OCEZShapes2dAgent(Agent):
         projection_model = OCProjectionNetwork(self.slot_dim, self.latent_dim, self.n_slots)
         projection_head_model = OCProjectionHeadNetwork(self.slot_dim, self.latent_dim, self.n_slots)
 
-        ez_model = EfficientZero(representation_model, dynamics_model, reward_prediction_model, value_policy_model,
+        ez_model = EfficientZero(dynamics_model, reward_prediction_model, value_policy_model,
                                  projection_model, projection_head_model, self.config,
                                  state_norm=self.state_norm, value_prefix=self.value_prefix)
 

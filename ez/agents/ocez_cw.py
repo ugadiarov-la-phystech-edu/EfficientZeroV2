@@ -9,7 +9,6 @@ import math
 from ez.agents.base import Agent
 from omegaconf import open_dict
 
-from ez.envs import make_causal_world
 from ez.utils.format import DiscreteSupport
 from ez.agents.models import EfficientZero
 from ez.agents.models.base_model import *
