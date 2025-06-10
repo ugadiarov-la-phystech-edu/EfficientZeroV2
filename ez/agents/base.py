@@ -416,7 +416,13 @@ class Agent:
         target_model.eval()
         # init
         batch_size = self.config.train.batch_size
-        image_channel = self.config.env.obs_shape[0] if self.config.env.image_based else self.config.env.obs_shape
+        #image_channel = self.config.env.obs_shape[0] if self.config.env.image_based else self.config.env.obs_shape
+        if self.config.env.image_based:
+            image_channel = self.config.env.obs_shape[0]
+        elif self.config.env.slots_based:
+            image_channel = 1
+        else:
+            image_channel = self.config.env.obs_shape
         unroll_steps = self.config.rl.unroll_steps
         n_stack = self.config.env.n_stack
         gradient_scale = 1. / unroll_steps
@@ -476,8 +482,8 @@ class Agent:
         target_value_prefixes_support = DiscreteSupport.scalar_to_vector(target_value_prefixes, **self.config.model.reward_support)
 
         with autocast():
-            states, values, policies = model.initial_inference(obs_batch, training=True)
-        prev_slots = copy.deepcopy(states)
+            values, policies = model.initial_inference(obs_batch, training=True)
+        states = obs_batch
 
         if self.config.model.value_support.type == 'symlog':
             scaled_value = symexp(values).min(0)[0]
@@ -543,11 +549,13 @@ class Agent:
 
                 beg_index = image_channel * step_i
                 end_index = image_channel * (step_i + n_stack)
-                gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index], prev_slots)
-                prev_slots = copy.deepcopy(gt_next_states)
-                # projection for consistency
-                #dynamic_states_proj = model.do_projection(states, with_grad=True)
-                #gt_states_proj = model.do_projection(gt_next_states, with_grad=False)
+                if self.config.env.slots_based:
+                    gt_next_states = obs_target_batch[:, beg_index:end_index]
+                else:
+                    gt_next_states = model.do_representation(obs_target_batch[:, beg_index:end_index])
+                    # projection for consistency
+                    states = model.do_projection(states, with_grad=True)
+                    gt_next_states = model.do_projection(gt_next_states, with_grad=False)
                 if self.config.train.consistency_loss == 'mse':
                     consistency_loss += mse_loss(states, gt_next_states) * mask
                 else:

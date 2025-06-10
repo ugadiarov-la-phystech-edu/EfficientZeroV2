@@ -45,7 +45,7 @@ def make_envs(game_setting, game_name, model, num_envs, seed, save_path=None, **
                         save_path=save_path, **kwargs) for i in range(num_envs)]
     elif game_setting == 'maniskill':
         envs = [_env_fn(seed=i + seed, **kwargs) for i in range(num_envs)]
-    elif game_setting == 'Shapes2dl':
+    elif game_setting == 'Shapes2d':
         envs = [_env_fn(game_name,
                         seed=i + seed,
                         model=model,
