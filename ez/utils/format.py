@@ -268,7 +268,7 @@ def formalize_obs_lst(obs_lst, image_based, slots_based, already_prepare=False):
     return obs_lst
 
 
-def prepare_obs_lst(obs_lst, image_based):
+def prepare_obs_lst(obs_lst, image_based, slots_based):
     """Prepare the observations to satisfy the input fomat of torch
     [B, S, W, H, C] -> [B, S x C, W, H]
     batch, stack num, width, height, channel
@@ -280,6 +280,8 @@ def prepare_obs_lst(obs_lst, image_based):
 
         shape = obs_lst.shape
         obs_lst = obs_lst.reshape((shape[0], -1, shape[-2], shape[-1]))
+    elif slots_based:
+        obs_lst = np.asarray(obs_lst)
     else:
         # B, S, H
         obs_lst = np.asarray(obs_lst)

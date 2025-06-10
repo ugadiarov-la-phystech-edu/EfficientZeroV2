@@ -196,7 +196,7 @@ class BatchWorker(Worker):
             action_lst.append(_actions)
             mask_lst.append(_mask)
 
-        obs_lst = prepare_obs_lst(obs_lst, self.image_based)
+        obs_lst = prepare_obs_lst(obs_lst, self.image_based, self.slots_based)
         inputs_batch = [obs_lst, action_lst, mask_lst, indices_lst, weights_lst, make_time_lst, prior_lst]
         for i in range(len(inputs_batch)):
             inputs_batch[i] = np.asarray(inputs_batch[i])
@@ -640,7 +640,7 @@ class BatchWorker(Worker):
 
         # init
         value_obs_lst, td_steps_lst, value_mask = [], [], []    # mask: 0 -> out of traj
-        zero_obs = traj_lst[0].get_zero_obs(self.n_stack, channel_first=False)
+        zero_obs = traj_lst[0].get_zero_obs(self.n_stack)
 
         # get obs_{t+k}
         for traj, state_index, idx in zip(traj_lst, transition_pos_lst, indices_lst):
@@ -988,17 +988,17 @@ class BatchWorker(Worker):
                 beg_index = mini_batch * i
                 end_index = mini_batch * (i + 1)
                 current_obs = obs_lst[beg_index:end_index]
-                current_obs = formalize_obs_lst(current_obs, self.image_based)
+                current_obs = formalize_obs_lst(current_obs, self.image_based, self.slots_based)
                 # obtain the statistics at current steps
                 with autocast():
-                    states, values, policies = self.model.initial_inference(current_obs)
+                    values, policies = self.model.initial_inference(current_obs)
 
                 # process outputs
                 values = values.detach().cpu().numpy().flatten()
                 # concat
                 value_lst.append(values)
                 if not only_value:
-                    state_lst.append(states)
+                    state_lst.append(current_obs)
                     policy_lst.append(policies)
 
         value_lst = np.concatenate(value_lst)
