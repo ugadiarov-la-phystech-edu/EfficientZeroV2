@@ -18,6 +18,7 @@ import numpy as np
 import torch.optim as optim
 import torch.distributed as dist
 import torch.nn.functional as F
+from ez.utils.format import formalize_obs_lst
 
 from pathlib import Path
 
@@ -417,12 +418,7 @@ class Agent:
         # init
         batch_size = self.config.train.batch_size
         #image_channel = self.config.env.obs_shape[0] if self.config.env.image_based else self.config.env.obs_shape
-        if self.config.env.image_based:
-            image_channel = self.config.env.obs_shape[0]
-        elif self.config.env.slots_based:
-            image_channel = 1
-        else:
-            image_channel = self.config.env.obs_shape
+        image_channel = 1
         unroll_steps = self.config.rl.unroll_steps
         n_stack = self.config.env.n_stack
         gradient_scale = 1. / unroll_steps
@@ -444,7 +440,7 @@ class Agent:
         else:
             obs_batch_raw = torch.from_numpy(obs_batch_ori).cuda().float()
 
-        obs_batch = obs_batch_raw[:, 0: n_stack * image_channel]  # obs_batch: current observation
+        obs_batch = obs_batch_raw[:, 0: n_stack * image_channel].squeeze(1)  # obs_batch: current observation
         obs_target_batch = obs_batch_raw[:, image_channel:]       # obs_target_batch: observation of next steps
         # if self.config.train.use_decorrelation:
         #     obs_batch_all = copy.deepcopy(obs_batch)
@@ -549,7 +545,7 @@ class Agent:
 
                 beg_index = image_channel * step_i
                 end_index = image_channel * (step_i + n_stack)
-                gt_next_states = obs_target_batch[:, beg_index:end_index]
+                gt_next_states = obs_target_batch[:, beg_index:end_index].squeeze(1)
                 if self.config.train.consistency_loss == 'mse':
                     consistency_loss += mse_loss(states, gt_next_states) * mask
                 else:

@@ -10,7 +10,8 @@ env:
   n_stack: 1
   max_episode_steps: 125
   gray_scale: False
-  image_based: True
+  image_based: False
+  slots_based: True
   clip_reward: False
   obs_shape: [3, 224, 224]
   episodic: True

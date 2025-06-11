@@ -9,7 +9,7 @@ import math
 from ez.agents.base import Agent
 from omegaconf import open_dict
 
-from ez.envs import make_maniskill
+from ez.envs.maniskill3 import ManiSkill
 from ez.utils.format import DiscreteSupport
 from ez.agents.models import EfficientZero
 from ez.agents.models.base_model import *
@@ -37,7 +37,7 @@ class OCEZManiskillAgent(Agent):
     def update_config(self):
         assert not self._update
 
-        env = make_maniskill(seed = 0, **self.config.env)
+        env = ManiSkill(reward_mode='normalized_dense', image_size=self.config.env.obs_shape[2])
         action_space_size = env.action_space.shape[0]
 
         obs_channel = 1 if self.config.env.gray_scale else 3
@@ -70,9 +70,6 @@ class OCEZManiskillAgent(Agent):
     def build_model(self):
         is_continuous = (self.config.env.env == "maniskill")
 
-        representation_model = OCRepresentationNetworkDINOSAUR(self.n_slots, self.slot_dim, self.model_name, self.input_feature_dim,
-                                                               self.num_patches, self.features, self.dinosaur_weights)
-
         dynamics_model = OCDynamicsNetwork(self.slot_dim, self.latent_dim, self.action_space_size, self.n_slots)
 
         value_policy_model = OCValuePolicyNetwork(self.slot_dim, self.latent_dim, self.n_slots,
@@ -89,7 +86,7 @@ class OCEZManiskillAgent(Agent):
         projection_model = OCProjectionNetwork(self.slot_dim, self.latent_dim, self.n_slots)
         projection_head_model = OCProjectionHeadNetwork(self.slot_dim, self.latent_dim, self.n_slots)
 
-        ez_model = EfficientZero(representation_model, dynamics_model, reward_prediction_model, value_policy_model,
+        ez_model = EfficientZero(dynamics_model, reward_prediction_model, value_policy_model,
                                  projection_model, projection_head_model, self.config,
                                  state_norm=self.state_norm, value_prefix=self.value_prefix)
 

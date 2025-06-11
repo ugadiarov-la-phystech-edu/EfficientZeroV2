@@ -14,7 +14,7 @@ from ez.envs.causal_world.cw_envs import CwTargetEnv
 from ez.envs.maniskill3 import ManiSkill
 from ez.envs.robosuite import RobosuiteEnv
 from ez.agents.models.base_model import OCRepresentationNetworkDINOSAUR, OCRepresentationNetworkSLATE
-from ez.ocr.tools import SlotExtractor
+from ez.ocr.tools import SlotExtractor, Dinosaur
 from collections import namedtuple
 import torch
 from ez.ocr.slate.slate import SLATE
@@ -230,7 +230,7 @@ def make_shapes2d(game_name, seed, save_path=None, **kwargs):
     max_episode_steps = kwargs['max_episode_steps']
     clip_reward = kwargs.get('clip_reward')
     obs_to_string = kwargs.get('obs_to_string')
-    num_slots = kwargs.get('num_slots')
+    num_slots = kwargs.get('n_slots')
     slot_dim = kwargs.get('slot_dim')
     ocr_config_path = kwargs.get('ocr_config_path')
     checkpoint_path = kwargs.get('checkpoint_path')
@@ -264,7 +264,7 @@ def make_causal_world(env_config_path, seed, save_path=None, **kwargs):
     obs_to_string = kwargs.get('obs_to_string')
     obs_shape = kwargs['obs_shape']
     gray_scale = kwargs.get('gray_scale')
-    num_slots = kwargs.get('num_slots')
+    num_slots = kwargs.get('n_slots')
     slot_dim = kwargs.get('slot_dim')
     ocr_config_path = kwargs.get('ocr_config_path')
     checkpoint_path = kwargs.get('checkpoint_path')
@@ -300,12 +300,34 @@ def make_robosuite(game_name, seed, save_path=None, **kwargs):
     max_episode_steps = kwargs['max_episode_steps']
     obs_shape = kwargs['obs_shape']
     gray_scale = kwargs.get('gray_scale')
+    num_slots = kwargs.get('n_slots')
+    slot_dim = kwargs.get('slot_dim')
+    model_name = kwargs.get('model_name')
+    input_feature_dim = kwargs.get('input_feature_dim')
+    num_patches = kwargs.get('num_patches')
+    features_size = kwargs.get('features')
+    features = (features_size, features_size, features_size)
+    checkpoint_path = kwargs.get('checkpoint_path')
 
     env = RobosuiteEnv(task=game_name, horizon=max_episode_steps, seed=seed)
 
     env = WarpFrame(env, width=obs_shape[1], height=obs_shape[2], grayscale=gray_scale)
 
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
+
+    dinosaur = Dinosaur(dino_model_name=model_name, n_slots=num_slots, slot_dim=slot_dim,
+                        intput_feature_dim=input_feature_dim, num_patches=num_patches, features=features)
+
+    state_dict = torch.load(checkpoint_path)['state_dict']
+    state_dict = {key[len('models.'):]: value for key, value in state_dict.items()}
+
+    dinosaur.load_state_dict(state_dict)
+    dinosaur = dinosaur.eval()
+    dinosaur.requires_grad_(False)
+
+    slot_extractor = SlotExtractor(model=dinosaur, device='cuda', name_model = 'DINOSAUR')
+
+    env = SlotExtractorWrapper(env, slot_extractor, num_slots, slot_dim)
     return env
 
 def make_maniskill(seed, **kwargs):
@@ -314,6 +336,14 @@ def make_maniskill(seed, **kwargs):
     obs_to_string = kwargs.get('obs_to_string')
     max_episode_steps = kwargs['max_episode_steps']
     obs_shape = kwargs['obs_shape']
+    num_slots = kwargs.get('n_slots')
+    slot_dim = kwargs.get('slot_dim')
+    model_name = kwargs.get('model_name')
+    input_feature_dim = kwargs.get('input_feature_dim')
+    num_patches = kwargs.get('num_patches')
+    features_size = kwargs.get('features')
+    features = (features_size, features_size, features_size)
+    checkpoint_path = kwargs.get('checkpoint_path')
 
     env = ManiSkill(reward_mode='normalized_dense', image_size=obs_shape[2])
 
@@ -324,4 +354,18 @@ def make_maniskill(seed, **kwargs):
     env = FailOnTimelimitWrapper(env)
 
     env = DMCWrapper(env, obs_to_string=obs_to_string, clip_reward=clip_reward)
+
+    dinosaur = Dinosaur(dino_model_name=model_name, n_slots=num_slots, slot_dim=slot_dim,
+                        intput_feature_dim=input_feature_dim, num_patches=num_patches, features=features)
+
+    state_dict = torch.load(checkpoint_path)['state_dict']
+    state_dict = {key[len('models.'):]: value for key, value in state_dict.items()}
+
+    dinosaur.load_state_dict(state_dict)
+    dinosaur = dinosaur.eval()
+    dinosaur.requires_grad_(False)
+
+    slot_extractor = SlotExtractor(model=dinosaur, device='cuda', name_model = 'DINOSAUR')
+
+    env = SlotExtractorWrapper(env, slot_extractor, num_slots, slot_dim)
     return env
