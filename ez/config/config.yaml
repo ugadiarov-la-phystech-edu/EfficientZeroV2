@@ -22,6 +22,7 @@ mcts:
 oc:
 model:
 actors:
+resume:
 wandb:
   project: 'ez-v2'
   tag: ''
@@ -52,10 +53,6 @@ ray:
 log:
   log_interval: 1    # prev 1000
   log_smos: False
-
-resume:
-  wandb_id: ''
-  load_path: ''
 
 # ===========================================================================
 # evaluation

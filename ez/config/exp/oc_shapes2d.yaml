@@ -42,6 +42,10 @@ priority:
   priority_prob_beta: 1.0  # prev 0.4
   min_prior: 0.000001
 
+resume:
+  wandb_id: ''
+  load_path: ''
+
 # training
 train:
   load_model_path: ''
