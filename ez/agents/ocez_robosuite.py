@@ -75,8 +75,9 @@ class OCEZRobosuiteAgent(Agent):
 
         value_policy_model = OCValuePolicyNetwork(self.slot_dim, self.latent_dim, self.n_slots,
                                                   self.config.model.value_support.size,
-                                                  self.action_space_size * 2, is_continuous,
-                                                  self.fc_layers, self.init_zero, v_num=self.config.train.v_num)
+                                                  self.action_space_size * 2,
+                                                  self.fc_layers, self.init_zero, is_continuous,
+                                                  v_num=self.config.train.v_num)
 
         reward_output_size = self.config.model.reward_support.size
         if self.value_prefix:
@@ -84,8 +85,8 @@ class OCEZRobosuiteAgent(Agent):
                                                       reward_output_size, self.config.model.rnn_hidden_size,
                                                       self.fc_layers, self.init_zero)
         else:
-            reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.n_slots,
-                                                       self.fc_layers, self.init_zero, reward_output_size)
+            reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.n_slots, reward_output_size,
+                                                       self.fc_layers, self.init_zero)
 
 
         ez_model = EfficientZero(dynamics_model, reward_prediction_model, value_policy_model, self.config,

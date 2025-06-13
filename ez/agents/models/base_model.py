@@ -282,6 +282,7 @@ class OCValuePolicyNetwork(nn.Module):
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
         self.n_slots = n_slots
+        print()
         self.gnn_policy = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
                               num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
         #self.mlp_policy = nn.Linear(in_features=self.slot_dim, out_features=policy_output_size)
