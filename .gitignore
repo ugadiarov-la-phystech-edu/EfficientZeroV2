@@ -18,6 +18,7 @@ __pycache__/
 .wandb
 
 ez/wandb
+wandb
 ez/results
 
 # c++/cython style external packages
