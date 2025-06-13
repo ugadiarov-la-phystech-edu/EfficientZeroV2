@@ -15,8 +15,6 @@ class EfficientZero(nn.Module):
                  dynamics_model,
                  reward_prediction_model,
                  value_policy_model,
-                 projection_model,
-                 projection_head_model,
                  config,
                  **kwargs,
                  ):
@@ -44,8 +42,6 @@ class EfficientZero(nn.Module):
         self.dynamics_model = dynamics_model
         self.reward_prediction_model = reward_prediction_model
         self.value_policy_model = value_policy_model
-        self.projection_model = projection_model
-        self.projection_head_model = projection_head_model
         self.config = config
         self.state_norm = kwargs.get('state_norm')
         self.value_prefix = kwargs.get('value_prefix')

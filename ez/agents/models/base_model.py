@@ -276,7 +276,7 @@ class ValuePolicyNetwork(nn.Module):
 
 class OCValuePolicyNetwork(nn.Module):
     def __init__(self, slot_dim, latent_dim, n_slots, value_output_size,
-                 policy_output_size, is_continuous=False, **kwargs):
+                 policy_output_size, fc_layers, init_zero, is_continuous=False, **kwargs):
         super().__init__()
         self.v_num = kwargs.get('v_num')
         self.slot_dim = slot_dim
@@ -284,11 +284,15 @@ class OCValuePolicyNetwork(nn.Module):
         self.n_slots = n_slots
         self.gnn_policy = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
                               num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
-        self.mlp_policy = nn.Linear(in_features=self.slot_dim, out_features=policy_output_size)
+        #self.mlp_policy = nn.Linear(in_features=self.slot_dim, out_features=policy_output_size)
 
         self.gnn_values = nn.ModuleList([GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
                                num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False) for _ in range(self.v_num)])
-        self.mlp_values = nn.ModuleList([nn.Linear(in_features=self.slot_dim, out_features=value_output_size) for _ in range(self.v_num)])
+        #self.mlp_values = nn.ModuleList([nn.Linear(in_features=self.slot_dim, out_features=value_output_size) for _ in range(self.v_num)])
+        self.fc_values = nn.ModuleList([mlp(self.slot_dim, fc_layers, value_output_size,
+                            init_zero=False if is_continuous else init_zero) for _ in range(self.v_num)])
+        self.fc_policy = mlp(self.slot_dim, fc_layers if not is_continuous else [64],
+                             policy_output_size, init_zero=init_zero)
         self.act = nn.ReLU(inplace=True)
 
         self.is_continuous = is_continuous
@@ -298,7 +302,8 @@ class OCValuePolicyNetwork(nn.Module):
     def forward(self, slots):
         x = self.gnn_policy(slots, action=None)
         x = self.act(x)
-        policy = self.mlp_policy(x.sum(dim=1))
+        #policy = self.mlp_policy(x.sum(dim=1))
+        policy = self.fc_policy(x.sum(dim=1))
 
         if self.is_continuous:
             action_space_size = policy.shape[-1] // 2
@@ -310,7 +315,8 @@ class OCValuePolicyNetwork(nn.Module):
         for i in range(self.v_num):
             x = self.gnn_values[i](slots, action=None)
             x = self.act(x)
-            value = self.mlp_values[i](x.sum(dim=1))
+            #value = self.mlp_values[i](x.sum(dim=1))
+            value = self.fc_values[i](x.sum(dim=1))
             values.append(value)
 
         return torch.stack(values), policy
@@ -334,7 +340,7 @@ class SupportNetwork(nn.Module):
         return x
     
 class OCSupportNetwork(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size):
+    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, fc_layers, init_zero):
         super().__init__()
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
@@ -342,12 +348,14 @@ class OCSupportNetwork(nn.Module):
         self.gnn = GNN(input_dim=self.slot_dim, hidden_dim=self.latent_dim, action_dim=0,
                               num_objects=self.n_slots, ignore_action=True, copy_action=False, edge_actions=False)
         self.act = nn.ReLU(inplace=True)
-        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
+        #self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
+        self.fc = mlp(self.slot_dim, fc_layers, output_support_size, init_zero=init_zero)
 
     def forward(self, slots):
         x = self.gnn(slots, action=None)
         x = self.act(x)
-        reward = self.mlp(x.sum(dim=1))
+        #reward = self.mlp(x.sum(dim=1))
+        reward = self.fc(x.sum(dim=1))
         return reward
 
 
@@ -396,7 +404,8 @@ class OCSupportLSTMNetwork(nn.Module):
         return x, hidden
 
 class OCSupportGRUGNN(nn.Module):
-    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, rnn_hidden_size, update_bias=-1):
+    def __init__(self, slot_dim, latent_dim, n_slots, output_support_size, rnn_hidden_size,
+                 fc_layers, init_zero, update_bias=-1,):
         super(OCSupportGRUGNN, self).__init__()
         self.slot_dim = slot_dim
         self.latent_dim = latent_dim
@@ -406,7 +415,8 @@ class OCSupportGRUGNN(nn.Module):
         self.update_bias = update_bias
         self.gnn = GNN(self.slot_dim + self.rnn_hidden_size, hidden_dim=self.latent_dim, action_dim=0, num_objects=self.n_slots,
                         ignore_action=True, copy_action=False, edge_actions=False, output_dim=3 * self.rnn_hidden_size)
-        self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
+        #self.mlp = nn.Linear(in_features=self.slot_dim, out_features=output_support_size)
+        self.fc = mlp(rnn_hidden_size, fc_layers, output_support_size, init_zero=init_zero)
 
     def forward(self, slots, hidden):
         hidden = hidden.squeeze(0)
@@ -417,7 +427,8 @@ class OCSupportGRUGNN(nn.Module):
         cand = self.act(reset * cand)
         update = torch.sigmoid(update + self.update_bias)
         hidden = (update * cand + (1 - update) * slots)
-        output = self.mlp(hidden.sum(dim=1))
+        #output = self.mlp(hidden.sum(dim=1))
+        output = self.fc(hidden.sum(dim=1))
         return output, hidden.unsqueeze(0)
 
 

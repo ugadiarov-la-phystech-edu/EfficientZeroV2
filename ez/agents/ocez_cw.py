@@ -29,6 +29,8 @@ class OCEZCWAgent(Agent):
         self.slot_dim = self.config.oc.slot_dim
         self.n_slots = self.config.oc.n_slots
         self.latent_dim = self.config.oc.latent_dim
+        self.init_zero = config.model.init_zero
+        self.fc_layers = config.model.fc_layers
 
     def update_config(self):
         assert not self._update
@@ -71,20 +73,20 @@ class OCEZCWAgent(Agent):
 
         value_policy_model = OCValuePolicyNetwork(self.slot_dim, self.latent_dim, self.n_slots,
                                                   self.config.model.value_support.size,
-                                                  self.action_space_size * 2, is_continuous, v_num=self.config.train.v_num)
+                                                  self.action_space_size * 2, is_continuous,
+                                                  self.fc_layers, self.init_zero, v_num=self.config.train.v_num)
 
         reward_output_size = self.config.model.reward_support.size
         if self.value_prefix:
             reward_prediction_model = OCSupportGRUGNN(self.slot_dim, self.latent_dim, self.n_slots,
-                                                           reward_output_size, self.config.model.rnn_hidden_size)
+                                                      reward_output_size, self.config.model.rnn_hidden_size,
+                                                      self.fc_layers, self.init_zero)
         else:
-            reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.n_slots, reward_output_size)
+            reward_prediction_model = OCSupportNetwork(self.slot_dim, self.latent_dim, self.n_slots,
+                                                       self.fc_layers, self.init_zero, reward_output_size)
 
-        projection_model = OCProjectionNetwork(self.slot_dim, self.latent_dim, self.n_slots)
-        projection_head_model = OCProjectionHeadNetwork(self.slot_dim, self.latent_dim, self.n_slots)
 
-        ez_model = EfficientZero(dynamics_model, reward_prediction_model, value_policy_model,
-                                 projection_model, projection_head_model, self.config,
+        ez_model = EfficientZero(dynamics_model, reward_prediction_model, value_policy_model, self.config,
                                  state_norm=self.state_norm, value_prefix=self.value_prefix)
 
         return ez_model
