@@ -43,4 +43,4 @@ if __name__ == '__main__':
 
     for i, sample in enumerate(samples):
         if i == len(samples)-1:
-            cv2.imwrite(f'causal_world.png', cv2.cvtColor(sample[0], cv2.COLOR_RGB2BGR))
+            cv2.imwrite(f'causal_world.png', cv2.cvtColor(sample['samples'][0], cv2.COLOR_RGB2BGR))
