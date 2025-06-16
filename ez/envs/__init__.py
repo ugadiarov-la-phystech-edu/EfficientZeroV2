@@ -280,7 +280,8 @@ def make_maniskill(seed, **kwargs):
     obs_shape = kwargs['obs_shape']
     gray_scale = kwargs.get('gray_scale')
 
-    env = ManiSkill(reward_mode='normalized_dense', image_size=224)
+    #env = ManiSkill(reward_mode='normalized_dense', image_size=224)
+    env = ManiSkill(reward_mode='normalized_dense', pose_reward_coef=0.01, place_reward_coef=0.1, image_size=224)
 
     env.seed(seed)
 

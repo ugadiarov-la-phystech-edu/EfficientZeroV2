@@ -1,11 +1,11 @@
 from typing import Any, Dict
 
-import gym
-import numpy as np
-
 import gymnasium
-import mani_skill.envs
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
+import gym
+from gym.wrappers import TimeLimit
 from mani_skill import PushCubeEnv, register_env
 from mani_skill.utils.structs import Array, Pose
 
@@ -98,3 +98,19 @@ class ManiSkill(gym.Env):
 
     def render(self, mode=None):
         return self.last_observation()
+
+
+if __name__ == '__main__':
+    time_limit = 50
+    env = ManiSkill(reward_mode='normalized_dense', pose_reward_coef=0.01, place_reward_coef=0.1, image_size=224)
+    env = TimeLimit(env, max_episode_steps=time_limit)
+    observations = [env.reset()]
+    done = False
+
+    while not done:
+        obs, rew, done, info = env.step(env.action_space.sample())
+        observations.append(obs)
+
+    for sample in observations:
+        plt.imshow(sample)
+        plt.show()

@@ -16,7 +16,7 @@ env:
   episodic: True
 
 rl:
-  discount: 0.99
+  discount: 0.925
   unroll_steps: 5   # prev 5
   td_steps: 5
   auto_td_steps: 30000  # prev 30000 for 100K env steps
