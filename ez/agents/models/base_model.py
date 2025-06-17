@@ -292,7 +292,8 @@ class OCValuePolicyNetwork(nn.Module):
         #self.mlp_values = nn.ModuleList([nn.Linear(in_features=self.slot_dim, out_features=value_output_size) for _ in range(self.v_num)])
         self.fc_values = nn.ModuleList([mlp(self.slot_dim, fc_layers, value_output_size,
                             init_zero=False if is_continuous else init_zero) for _ in range(self.v_num)])
-        self.fc_policy = mlp(self.slot_dim, fc_layers, policy_output_size, init_zero=init_zero)
+        self.fc_policy = mlp(self.slot_dim, fc_layers if not is_continuous else [64],
+                             policy_output_size, init_zero=init_zero)
         self.act = nn.ReLU(inplace=True)
 
         self.is_continuous = is_continuous
