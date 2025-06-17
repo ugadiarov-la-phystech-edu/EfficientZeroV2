@@ -345,7 +345,7 @@ def make_maniskill(seed, **kwargs):
     features = (features_size, features_size, features_size)
     checkpoint_path = kwargs.get('checkpoint_path')
 
-    env = ManiSkill(reward_mode='normalized_dense', image_size=obs_shape[2])
+    env = ManiSkill(reward_mode='normalized_dense', pose_reward_coef=0.01, place_reward_coef=0.1, image_size=obs_shape[2])
 
     env.seed(seed)
 
