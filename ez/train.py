@@ -66,7 +66,7 @@ def start_ddp_trainer(rank, config):
     if rank == 0:
         # wandb logger
         if config.ddp.training_size == 1:
-            wandb_name = config.env.game + '-' + config.wandb.tag
+            wandb_name = 'ocezv2-' + config.env.game + '_seed=' + str(config.env.base_seed)
             print(f'wandb_name={wandb_name}')
             logger = wandb.init(
                 name=wandb_name,
