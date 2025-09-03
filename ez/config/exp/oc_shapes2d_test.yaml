@@ -12,7 +12,7 @@ env:
   gray_scale: False
   image_based: False
   slots_based: True
-  clip_reward: True
+  clip_reward: False
   obs_shape: [3, 64, 64]
   episodic: True
 
