@@ -157,7 +157,7 @@ actors:
   batch_worker: 1
 
 # wandb
-wandb:
-  project: 'ez-v2-release'
+logger:
+  project: 'objectzero'
   tag: 'robosuite'
   debug: True

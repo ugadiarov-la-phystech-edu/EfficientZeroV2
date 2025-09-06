@@ -7,7 +7,8 @@ import os
 import time
 os.environ["RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE"] = "1"
 import ray
-import wandb
+#import wandb
+import comet_ml
 import hydra
 import torch
 import multiprocessing
@@ -27,7 +28,6 @@ from ez.utils.format import set_seed, init_logger
 from ez.worker import start_workers, join_workers
 from ez.eval import eval
 
-
 @hydra.main(config_path='./config', config_name='config', version_base='1.1')
 def main(config):
     if config.exp_config is not None:
@@ -41,8 +41,9 @@ def main(config):
         config.actors.batch_worker = 1
         config.data.num_envs = 1
 
-    if config.wandb.debug:
-        os.environ["WANDB_MODE"] = "disabled"
+    if config.logger.debug:
+        #os.environ["WANDB_MODE"] = "disabled"
+        os.environ["COMET_API_KEY"] = "disabled"
 
     if config.ddp.world_size > 1:
         mp.spawn(start_ddp_trainer, args=(config,), nprocs=config.ddp.world_size)
@@ -66,15 +67,24 @@ def start_ddp_trainer(rank, config):
     if rank == 0:
         # wandb logger
         if config.ddp.training_size == 1:
-            wandb_name = 'ocezv2-' + config.env.game + '_seed=' + str(config.env.base_seed)
-            print(f'wandb_name={wandb_name}')
-            logger = wandb.init(
-                name=wandb_name,
-                project=config.wandb.project,
-                id=config.resume.wandb_id,
-                resume='allow',
-                config=config
-            )
+            logger_name = 'ezv2-' + config.env.game + '_seed=' + str(config.env.base_seed)
+            print(f'wandb_name={logger_name}')
+            # logger = wandb.init(
+            #     name=wandb_name,
+            #     project=config.wandb.project,
+            #     id=config.resume.wandb_id,
+            #     resume='allow',
+            #     config=config
+            # )
+            if os.path.exists(config.resume.load_path):
+                comet_ml.login()
+                logger = comet_ml.start(mode="get", experiment_key=config.resume.run_id)
+            else:
+                logger = comet_ml.start(
+                    project_name=config.logger.project
+                )
+                logger.set_name(logger_name)
+                logger.log_parameters(config)
         else:
             logger = None
         # file logger

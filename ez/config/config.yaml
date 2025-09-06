@@ -21,8 +21,8 @@ data:
 mcts:
 model:
 actors:
-wandb:
-  project: 'ez-v2'
+logger:
+  project: 'objectzero'
   tag: ''
   debug:
 
@@ -53,7 +53,7 @@ log:
   log_smos: False
 
 resume:
-  wandb_id: ''
+  run_id: ''
   load_path: ''
 
 # ===========================================================================

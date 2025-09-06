@@ -151,7 +151,7 @@ actors:
   batch_worker: 8  # oriMCTS 16
 
 # wandb
-wandb:
-  project: 'ez-v2-release'
+logger:
+  project: 'objectzero'
   tag: 'Shapes2d'
   debug: False
