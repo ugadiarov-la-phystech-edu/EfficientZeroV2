@@ -11,7 +11,7 @@ env:
   max_episode_steps: 100
   gray_scale: False
   image_based: True
-  clip_reward: True
+  clip_reward: False
   obs_shape: [3, 96, 96]
   episodic: True
 
