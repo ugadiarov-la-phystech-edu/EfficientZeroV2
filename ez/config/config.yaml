@@ -23,8 +23,8 @@ oc:
 model:
 actors:
 resume:
-wandb:
-  project: 'ez-v2'
+logger:
+  project: 'objectzero'
   tag: ''
   debug:
 

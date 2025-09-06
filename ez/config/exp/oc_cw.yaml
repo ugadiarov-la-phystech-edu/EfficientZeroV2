@@ -44,7 +44,7 @@ priority:
   min_prior: 0.000001
 
 resume:
-  wandb_id: ''
+  run_id: ''
   load_path: ''
 
 # training
@@ -171,7 +171,7 @@ actors:
   batch_worker: 8
 
 # wandb
-wandb:
-  project: 'ez-v2-release'
+logger:
+  project: 'objectzero'
   tag: 'causal_world'
   debug: False

@@ -43,7 +43,7 @@ priority:
   min_prior: 0.000001
 
 resume:
-  wandb_id: ''
+  run_id: ''
   load_path: ''
 
 # training
@@ -174,7 +174,7 @@ actors:
   batch_worker: 1
 
 # wandb
-wandb:
+logger:
   project: 'ez-v2-release'
   tag: 'robosuite'
   debug: True

@@ -337,7 +337,8 @@ class Agent:
                     eval_logger.info(eval_log_str)
                     # TODO: fix the counter issue
                     # logger.log(eval_scalar, eval_counter)
-                    logger.log(eval_scalar, step_count)
+                    #logger.log(eval_scalar, step_count)
+                    logger.log_metrics(eval_scalar, step=step_count)
                     print('[Eval] ', eval_log_str)
 
                 # replay statistics
@@ -352,7 +353,7 @@ class Agent:
                     'dist/priorities_in_buffer': total_priorities,
                 })
                 log_distribution.update(other_distribution)
-                self.log_hist(logger, log_distribution, step_count)
+                #self.log_hist(logger, log_distribution, step_count)
 
             if step_count % 20000 == 0 and self.config.train.periodic_reset:
                 print('-------------------------reset network------------------------------')
@@ -362,7 +363,8 @@ class Agent:
             log_scalars.update(loss_data)
             log_scalars.update(other_scalar)
             if step_count > 500 and step_count % 1000 == 0:
-                logger.log(log_scalars, step_count)
+                #logger.log(log_scalars, step_count)
+                logger.log_metrics(log_scalars, step=step_count)
 
             traj_num, transition_num, total_priorities = ray.get([
                 replay_buffer.get_traj_num.remote(), replay_buffer.get_transition_num.remote(),
@@ -671,10 +673,10 @@ class Agent:
 
         return lr
 
-    def log_hist(self, logger, distribution_dict, step_count):
-        for key, hist in distribution_dict.items():
-            table = wandb.Histogram(hist, num_bins=200)
-            logger.log({key: table}, step_count)
+    # def log_hist(self, logger, distribution_dict, step_count):
+    #     for key, hist in distribution_dict.items():
+    #         table = wandb.Histogram(hist, num_bins=200)
+    #         logger.log({key: table}, step_count)
 
     def build_model(self):
         raise NotImplementedError
@@ -1003,7 +1005,7 @@ def train_ddp(agent, rank, replay_buffer, storage, batch_storage, logger):
                 'dist/priorities_in_buffer': total_priorities,
             })
             log_distribution.update(other_distribution)
-            agent.log_hist(logger, log_distribution, step_count)
+            #agent.log_hist(logger, log_distribution, step_count)
 
         if step_count % 20000 == 0 and agent.config.train.periodic_reset:
             print('-------------------------reset network------------------------------')
